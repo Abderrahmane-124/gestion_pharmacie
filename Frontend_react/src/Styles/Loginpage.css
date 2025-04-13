@@ -1,0 +1,124 @@
+/* CENTRAGE GLOBAL DE LA PAGE */
+body {
+  margin: 0;
+  height: 100vh;
+  font-family: 'Segoe UI', sans-serif;
+  background-color: #f1f1f1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* CONTAINER DU FORMULAIRE */
+.login-container {
+  background-color: #fff;
+  padding: 40px;
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 450px;
+  animation: slideIn 0.6s ease;
+}
+
+/* TITRE */
+h1 {
+  font-size: 28px;
+  text-align: center;
+  margin-bottom: 30px;
+  color: #2c3e50;
+}
+
+/* ANIMATION ENTRÉE */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* CHAMPS DE SAISIE */
+input[type="text"],
+input[type="password"],
+input[type="email"] {
+  width: 100%;
+  padding: 12px 15px;
+  margin-bottom: 20px;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  font-size: 16px;
+  transition: all 0.3s ease;
+}
+
+input:focus {
+  border-color: #4CAF50;
+  box-shadow: 0 0 5px rgba(76, 175, 80, 0.4);
+  outline: none;
+}
+
+/* BOUTONS */
+button {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  margin-top: 10px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background-color: #000;
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s;
+}
+
+button:hover {
+  background-color: #333;
+  transform: translateY(-2px);
+}
+
+button:active {
+  transform: scale(0.98);
+}
+
+/* BOUTONS TOGGLE (Connexion / Inscription) */
+.toggle-buttons {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 25px;
+  gap: 10px;
+}
+
+.toggle-buttons button {
+  padding: 8px 18px;
+  border-radius: 20px;
+  background-color: #f0f0f0;
+  color: #333;
+  border: 1px solid #ccc;
+}
+
+.toggle-buttons button.active {
+  background-color: #2e7d32;
+  color: white;
+  border-color: #2e7d32;
+}
+
+/* TEXTE DE SÉPARATION */
+.separator {
+  text-align: center;
+  margin: 20px 0;
+  color: #555;
+  font-weight: bold;
+}
+
+/* LIEN */
+a {
+  color: #4CAF50;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+a:hover {
+  color: #2e7d32;
+}
