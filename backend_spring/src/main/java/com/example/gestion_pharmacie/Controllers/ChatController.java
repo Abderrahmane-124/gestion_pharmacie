@@ -21,7 +21,6 @@ public class ChatController {
     @PostMapping
     public String chat(@RequestBody Map<String, String> payload) {
         String userMessage = payload.get("message");
-        System.out.println("User message: " + userMessage);
         return groqService.getChatResponse(userMessage);
     }
 }

@@ -33,12 +33,17 @@ public class GroqService {
         Map<String, String> userMsg = Map.of("role", "user", "content", userMessage);
 
         GroqChatRequest request = new GroqChatRequest();
-        request.setModel("mixtral-8x7b-32768"); // or "mixtral-8x7b-32768"
+        request.setModel("deepseek-r1-distill-qwen-32b");
         request.setMessages(List.of(systemMessage, userMsg));
 
         HttpEntity<GroqChatRequest> entity = new HttpEntity<>(request, headers);
 
         ResponseEntity<Map> response = restTemplate.exchange(apiUrl, HttpMethod.POST, entity, Map.class);
+        System.out.println("Groq raw response: " + response);
+        System.out.println("Body: " + response.getBody());
+        if (response.getStatusCode().isError()) {
+            throw new RuntimeException("Failed to get response from Groq API: " + response.getStatusCode());
+        }
 
         // Extract message from response JSON
         List<Map<String, Object>> choices = (List<Map<String, Object>>) response.getBody().get("choices");
