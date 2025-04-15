@@ -14,7 +14,7 @@ export default function Homepage() {
             className="homepage-button"
             onClick={() => navigate("/login")}
           >
-            Se connecterhhuhuhfuh
+            Se connecter
           </button>
         </div>
       </div>
