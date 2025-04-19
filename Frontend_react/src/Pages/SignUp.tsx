@@ -1,12 +1,20 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom"; // 🧭 pour redirection
 import "../Styles/SignUp.css";
 
 export default function SignUp() {
   const [role, setRole] = useState("Fournisseur");
+  const navigate = useNavigate(); // 🔁
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // handle sign up logic
+
+    // 👉 logiques selon le rôle
+    if (role === "Pharmacien") {
+      navigate("/dashboard-pharmacien");
+    } else {
+      navigate("/dashboard-fournisseur");
+    }
   };
 
   return (
