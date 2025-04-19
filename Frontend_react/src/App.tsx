@@ -1,24 +1,101 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Homepage from "./Pages/HomePage";
-import LoginPage from "./Pages/Loginpage";
 import SignUp from "./Pages/SignUp";
-import PharmacienDashboard from "./Pages/PharmacienDashboard";
-import MesMedicaments from "./Pages/Medicament";
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import DashboardPharmacien from './Pages/PharmacienDashboard';
+import FournisseurDashboard from './Pages/FournisseurDashboard';
+import { JSX, useEffect, useState } from "react";
+import LoginPage from "./Pages/Loginpage";
+import Homepage from "./Pages/HomePage";
 
+// Auto logout component for public pages
+const PublicRoute = ({ children }: { children: JSX.Element }) => {
+  const { logout, isAuthenticated } = useAuth();
+  
+  useEffect(() => {
+    // When this component mounts, log the user out if they're authenticated
+    if (isAuthenticated) {
+      logout();
+    }
+  }, [isAuthenticated, logout]);
+  
+  return children;
+};
 
-function App() {
+// Protected route component
+const ProtectedRoute = ({ children, role }: { children: JSX.Element, role?: string }) => {
+  const { isAuthenticated, user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  
+  // Use effect to handle the initial loading state
+  useEffect(() => {
+    // Short timeout to allow authentication state to be checked
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 500); // 500ms should be enough for auth check
+    
+    return () => clearTimeout(timer);
+  }, []);
+  
+  // While checking authentication, show nothing (or you could add a loading spinner)
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/login" />;
+  }
+  
+  if (role && user?.role !== role) {
+    return <Navigate to="/" />;
+  }
+  
+  return children;
+};
+
+function AppRoutes() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Homepage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/signup" element={<SignUp />} />
-        <Route path="/dashboard-pharmacien" element={<PharmacienDashboard />} />
-        <Route path="/mes-medicaments" element={<MesMedicaments />} />
-     
-      </Routes>
-    </Router>
+    <Routes>
+      <Route path="/" element={
+        <PublicRoute>
+          <Homepage />
+        </PublicRoute>
+      } />
+      <Route path="/signup" element={
+        <PublicRoute>
+          <SignUp />
+        </PublicRoute>
+      } />
+      <Route path="/login" element={
+        <PublicRoute>
+          <LoginPage />
+        </PublicRoute>
+      } />
+      <Route 
+        path="/PharmacienDashboard" 
+        element={
+          <ProtectedRoute role="PHARMACIEN">
+            <DashboardPharmacien />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/FournisseurDashboard" 
+        element={
+          <ProtectedRoute role="FOURNISSEUR">
+            <FournisseurDashboard />
+          </ProtectedRoute>
+        } 
+      />
+    </Routes>
   );
 }
 
-export default App;
+export default function App() {
+  return (
+    <Router>
+      <AuthProvider>
+        <AppRoutes />
+      </AuthProvider>
+    </Router>
+  );
+}
