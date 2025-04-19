@@ -33,7 +33,7 @@ public class GroqService {
         Map<String, String> userMsg = Map.of("role", "user", "content", userMessage);
 
         GroqChatRequest request = new GroqChatRequest();
-        request.setModel("deepseek-r1-distill-qwen-32b");
+        request.setModel("meta-llama/llama-4-scout-17b-16e-instruct");
         request.setMessages(List.of(systemMessage, userMsg));
 
         HttpEntity<GroqChatRequest> entity = new HttpEntity<>(request, headers);
