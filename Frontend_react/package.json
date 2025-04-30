@@ -9,18 +9,15 @@
     "preview": "vite preview"
   },
   "dependencies": {
-<<<<<<< HEAD
     "@chakra-ui/icons": "^2.2.4",
     "@chakra-ui/react": "^3.16.0",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
+    "axios": "^1.9.0",
     "bootstrap": "^5.3.5",
     "chart.js": "^4.4.9",
     "framer-motion": "^12.7.4",
     "lucide-react": "^0.503.0",
-=======
-    "axios": "^1.8.4",
->>>>>>> 569dc12c9fb99d66c5aa08c3909d7a6af37325ab
     "react": "^19.0.0",
     "react-bootstrap": "^2.10.9",
     "react-bootstrap-icons": "^1.11.5",
@@ -32,15 +29,11 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.21.0",
-<<<<<<< HEAD
     "@types/bootstrap": "^5.2.10",
     "@types/node": "^22.14.1",
     "@types/react": "^19.1.1",
     "@types/react-bootstrap": "^0.32.37",
     "@types/react-chartjs-2": "^2.0.2",
-=======
-    "@types/react": "^19.1.2",
->>>>>>> 569dc12c9fb99d66c5aa08c3909d7a6af37325ab
     "@types/react-dom": "^19.1.2",
     "@types/react-router-dom": "^5.3.3",
     "@types/recharts": "^1.8.29",

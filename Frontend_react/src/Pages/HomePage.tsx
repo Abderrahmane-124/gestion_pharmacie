@@ -1,13 +1,10 @@
 import { useNavigate } from "react-router-dom";
-<<<<<<< HEAD
 import { useEffect } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "../Styles/Homepage.css";
 import pharmacyLogo from "../assets/preview.jpg"; // Assurez-vous que le chemin est correct
 import appLogo from "../assets/preview.jpg";
-=======
-import "../Styles/HomePage.css";
->>>>>>> 569dc12c9fb99d66c5aa08c3909d7a6af37325ab
+
 
 export default function Homepage() {
   const navigate = useNavigate();
