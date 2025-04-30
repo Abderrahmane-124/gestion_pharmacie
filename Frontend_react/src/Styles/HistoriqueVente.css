@@ -1,0 +1,52 @@
+.historique-container {
+    background-color: #f9f9f9;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  
+  h2 {
+    color: #007bff;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  
+  .filters {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  
+  .filters .mb-3 {
+    width: 30%;
+  }
+  
+  .vente-table {
+    margin-top: 20px;
+  }
+  
+  .vente-table th, .vente-table td {
+    text-align: center;
+  }
+  
+  .vente-table tr:hover {
+    background-color: #e0f7fa;
+  }
+  
+  button.animate__animated {
+    animation-duration: 0.5s;
+  }
+  
+  button.animate__fadeIn {
+    animation-name: fadeIn;
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  

@@ -1,0 +1,197 @@
+
+/* MedicationsSuppliers.css - Styles pour la visualisation des médicaments et fournisseurs (sans photos) */
+
+.medication-container {
+  padding: 20px;
+  background-color: #b5c0dc;
+  min-height: 100vh;
+}
+
+.pharmacy-heading {
+  color: #155724;
+  font-weight: bold;
+  margin-bottom: 25px;
+  border-bottom: 2px solid #28a745;
+  padding-bottom: 10px;
+}
+
+.search-section {
+  background-color: #ffffff;
+  padding: 15px;
+  border-radius: 5px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.search-section:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.search-icon {
+  background-color: #ffffff;
+  border-right: none;
+}
+
+.search-input {
+  border-left: none;
+}
+
+.supplier-select {
+  color: #28a745;
+  border-color: #28a745;
+}
+
+.sort-btn {
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.medication-card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  height: 100%;
+}
+
+.medication-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+}
+
+.category-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #f8f9fa;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.category-tag {
+  display: flex;
+  align-items: center;
+  font-size: 0.9rem;
+  color: #155724;
+}
+
+.category-icon {
+  font-size: 1.2rem;
+  color: #28a745;
+}
+
+.stock-badge {
+  font-size: 0.75rem;
+}
+
+.med-info {
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px dashed #3a5066;
+}
+
+.medication-title {
+  color: #155724;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.medication-dosage {
+  color: #6c757d;
+  font-size: 0.9rem;
+  margin-bottom: 0;
+}
+
+.supplier-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 15px;
+  font-size: 0.9rem;
+}
+
+.medication-supplier {
+  color: #6c757d;
+}
+
+.expiration-date {
+  color: #6c757d;
+}
+
+.price-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 15px;
+  padding-top: 10px;
+  border-top: 1px dashed #e9ecef;
+}
+
+.medication-price {
+  font-weight: bold;
+  color: #155724;
+  font-size: 1.2rem;
+}
+
+.price-tag {
+  font-size: 0.75rem;
+}
+
+.add-to-cart-btn {
+  background-color: #28a745;
+  border-color: #28a745;
+  transition: all 0.3s ease;
+}
+
+.add-to-cart-btn:hover {
+  background-color: #218838;
+  border-color: #1e7e34;
+  transform: scale(1.05);
+}
+
+.btn-animation {
+  animation: pulse 0.5s;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Pagination styling */
+.pagination .page-item.active .page-link {
+  background-color: #28a745;
+  border-color: #28a745;
+}
+
+.pagination .page-link {
+  color: #28a745;
+}
+
+.pagination .page-link:hover {
+  color: #218838;
+  background-color: #121714;
+}
+
+/* Animations */
+.fade-in {
+  animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
