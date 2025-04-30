@@ -1,5 +1,6 @@
 package com.example.gestion_pharmacie.Controllers;
 
+import com.example.gestion_pharmacie.DTO.AlerteRequest;
 import com.example.gestion_pharmacie.Services.AlerteService;
 import com.example.gestion_pharmacie.entites.Alerte;
 import org.springframework.http.HttpStatus;
@@ -54,35 +55,4 @@ public class AlerteController {
         return ResponseEntity.ok(alerteService.getAlertesUtilisateur());
     }
 
-    // DTO pour les requêtes d'alerte
-    public static class AlerteRequest {
-        private String message;
-        private int minimumQuantite;
-        private List<Long> medicamentIds;
-
-        // Getters and setters
-        public String getMessage() {
-            return message;
-        }
-
-        public void setMessage(String message) {
-            this.message = message;
-        }
-
-        public int getMinimumQuantite() {
-            return minimumQuantite;
-        }
-
-        public void setMinimumQuantite(int minimumQuantite) {
-            this.minimumQuantite = minimumQuantite;
-        }
-
-        public List<Long> getMedicamentIds() {
-            return medicamentIds;
-        }
-
-        public void setMedicamentIds(List<Long> medicamentIds) {
-            this.medicamentIds = medicamentIds;
-        }
-    }
 }
