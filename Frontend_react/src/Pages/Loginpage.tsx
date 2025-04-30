@@ -33,47 +33,38 @@ export default function LoginPage() {
       // Get the token from the response
       const { token } = response.data;
       
-      // Set the authorization header
+      // Set the authorization header for subsequent requests
       apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       
-      // Make a simple GET request to verify the role
       try {
-        const usersResponse = await apiClient.get('/api/utilisateurs');
-        const users = usersResponse.data;
-        
-        // Find the current user by email
-        let userRole = null;
-        const currentUser = users.find((user: any) => user.email === email);
+        // Use the dedicated endpoint to get current user info
+        const currentUser = await authService.getCurrentUser();
         
         if (currentUser && currentUser.role) {
-          userRole = currentUser.role;
-          console.log("User role:", userRole);
-          
           // Create the user object
           const user = {
-            email,
-            role: userRole
+            email: currentUser.email,
+            role: currentUser.role
           };
           
           // Set the auth info in context
           setAuthInfo(user, token);
           
           // Redirect based on role
-          if (userRole === "PHARMACIEN") {
+          if (currentUser.role === "PHARMACIEN") {
             navigate("/PharmacienDashboard");
-          } else if (userRole === "FOURNISSEUR") {
+          } else if (currentUser.role === "FOURNISSEUR") {
             navigate("/FournisseurDashboard");
           } else {
             navigate("/");
           }
         } else {
-          // Fallback if we can't determine the role
           setError("Unable to determine user role");
           setLoading(false);
         }
       } catch (error) {
-        console.error("Error verifying user role:", error);
-        setError("Error verifying user role");
+        console.error("Error getting current user:", error);
+        setError("Error getting user information");
         setLoading(false);
       }
     } catch (err) {

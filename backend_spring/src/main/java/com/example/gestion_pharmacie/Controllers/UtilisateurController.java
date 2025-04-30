@@ -53,6 +53,16 @@ public class UtilisateurController {
         return new ResponseEntity<>(utilisateurs, HttpStatus.OK);
     }
 
+    @GetMapping("/current")
+    public ResponseEntity<Utilisateur> getCurrentUser() {
+        try {
+            Utilisateur currentUser = utilisateurService.getCurrentUser();
+            return new ResponseEntity<>(currentUser, HttpStatus.OK);
+        } catch (RuntimeException e) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteUtilisateur(@PathVariable Long id) {
         try {
