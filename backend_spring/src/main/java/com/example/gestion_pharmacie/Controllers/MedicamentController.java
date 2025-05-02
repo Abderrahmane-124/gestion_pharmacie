@@ -48,7 +48,7 @@ public class MedicamentController {
     }
 
     @PreAuthorize("hasAnyRole('FOURNISSEUR', 'PHARMACIEN')")
-    @GetMapping("/my-medications")
+    @GetMapping("/my-medicaments")
     public ResponseEntity<List<Medicament>> getUserMedicaments() {
         return ResponseEntity.ok(medicamentService.getUserMedicaments());
     }

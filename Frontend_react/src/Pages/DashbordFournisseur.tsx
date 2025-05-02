@@ -40,52 +40,200 @@ const DashboardFournisseur = () => {
   const [showOrderDetails, setShowOrderDetails] = useState(false);
   interface Order {
     id: number;
-    pharmacie: string;
-    date: string;
+    dateCommande: string;
     statut: string;
+    pharmacien: {
+      id: number;
+      nom: string;
+      prenom: string;
+    };
+    fournisseur: {
+      id: number;
+      nom: string;
+      prenom: string;
+    };
+    lignesCommande: {
+      id: number;
+      quantite: number;
+      medicament: {
+        id: number;
+        nom: string;
+        prix_unitaire: number;
+        quantite: number;
+      }
+    }[];
     montant: number;
-    produits: { nom: string; quantite: number; prix: number }[];
   }
   
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Données factices pour la démo
+  // Replace the mock data useEffect with API call
   useEffect(() => {
-    // Simuler le chargement des données depuis une API
-    setTimeout(() => {
-      const mockMedicaments = [
-        { id: 1, nom: "Amoxicilline", categorie: "Antibiotique", quantite: 200, prix: 85, dateExpiration: "2025-09-15" },
-        { id: 2, nom: "Doliprane", categorie: "Analgésique", quantite: 350, prix: 25, dateExpiration: "2026-03-20" },
-        { id: 3, nom: "Ventoline", categorie: "Respiratoire", quantite: 120, prix: 130, dateExpiration: "2025-11-10" },
-        { id: 4, nom: "Spasfon", categorie: "Antispasmodique", quantite: 180, prix: 40, dateExpiration: "2026-01-05" },
-        { id: 5, nom: "Kardégic", categorie: "Cardiovasculaire", quantite: 90, prix: 75, dateExpiration: "2025-08-22" },
-        { id: 6, nom: "Levothyrox", categorie: "Hormonal", quantite: 110, prix: 60, dateExpiration: "2025-12-18" },
-      ];
-      
-      const mockCommandes = [
-        { id: 1, pharmacie: "Pharmacie Centrale", date: "2025-04-22", statut: "En Attente", montant: 4250, produits: [
-          { nom: "Amoxicilline", quantite: 50, prix: 85 },
-          { nom: "Doliprane", quantite: 30, prix: 25 }
-        ] },
-        { id: 2, pharmacie: "Pharmacie du Soleil", date: "2025-04-20", statut: "En Cours De Livraison", montant: 3600, produits: [
-          { nom: "Ventoline", quantite: 20, prix: 130 },
-          { nom: "Kardégic", quantite: 10, prix: 75 }
-        ] },
-        { id: 3, pharmacie: "Pharmacie Moderne", date: "2025-04-18", statut: "Livré", montant: 2900, produits: [
-          { nom: "Spasfon", quantite: 25, prix: 40 },
-          { nom: "Levothyrox", quantite: 30, prix: 60 }
-        ] },
-        { id: 4, pharmacie: "Pharmacie des Alpes", date: "2025-04-15", statut: "Livré", montant: 5100, produits: [
-          { nom: "Amoxicilline", quantite: 60, prix: 85 }
-        ] }
-      ];
-      
-      setMedicaments(mockMedicaments);
-      setCommandes(mockCommandes);
-      setFilteredCommandes(mockCommandes);
-      setLoading(false);
-    }, 1500);
+    const fetchMedicaments = async () => {
+      try {
+        setLoading(true);
+        console.log("Attempting to fetch medications...");
+        
+        // Try with a different approach without credentials
+        const url = 'http://localhost:8080/medicaments/my-medicaments';
+        console.log("Fetching from:", url);
+        
+        // Get token from localStorage if you have it
+        const token = localStorage.getItem('token');
+        
+        const response = await fetch(url, {
+          method: 'GET',
+          // Don't use credentials: 'include' which is causing CORS issues
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            // If you have a token-based auth system:
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+          }
+        });
+        
+        console.log("Response status:", response.status);
+        
+        if (!response.ok) {
+          throw new Error(`API error: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log("Raw data received:", data);
+        
+        // Ensure data has the expected structure
+        const processedData = Array.isArray(data) ? data.map(item => ({
+          id: item.id || Math.random(),
+          nom: item.nom || item.name || "Sans nom",
+          categorie: item.categorie || item.category || "Non classé",
+          quantite: item.quantite || item.quantity || 0,
+          prix: item.prix_unitaire || item.prix || item.price || 0,
+          dateExpiration: item.date_expiration ? new Date(item.date_expiration).toISOString().split('T')[0] : item.dateExpiration || "Non définie"
+        })) : [];
+        
+        console.log("Processed data:", processedData);
+        setMedicaments(processedData);
+        
+        // Fetch commandes data from the API
+        try {
+          console.log("Attempting to fetch commandes...");
+          const commandesUrl = 'http://localhost:8080/commandes/current_user';
+          console.log("Fetching from:", commandesUrl);
+          
+          const commandesResponse = await fetch(commandesUrl, {
+            method: 'GET',
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+              ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+            }
+          });
+          
+          console.log("Commandes response status:", commandesResponse.status);
+          
+          if (!commandesResponse.ok) {
+            throw new Error(`API error: ${commandesResponse.status}`);
+          }
+          
+          const commandesData = await commandesResponse.json();
+          console.log("Raw commandes data received:", commandesData);
+          
+          // Process the commandes data
+          const processedCommandes = Array.isArray(commandesData) ? commandesData.map(item => ({
+            id: item.id,
+            dateCommande: item.dateCommande,
+            statut: item.statut,
+            pharmacien: item.pharmacien,
+            fournisseur: item.fournisseur,
+            lignesCommande: item.lignesCommande,
+            // Calculate total amount
+            montant: item.lignesCommande.reduce((total: number, ligne: any) => 
+              total + (ligne.quantite * ligne.medicament.prix_unitaire), 0)
+          })) : [];
+          
+          console.log("Processed commandes data:", processedCommandes);
+          setCommandes(processedCommandes);
+          setFilteredCommandes(processedCommandes);
+        } catch (error) {
+          console.error("Error fetching commandes:", error);
+          // Fallback to mock commandes data
+          const mockOrders: Order[] = [
+            { 
+              id: 1, 
+              pharmacien: { id: 1, nom: "Pharmacie Centrale", prenom: "" }, 
+              dateCommande: "2025-04-22", 
+              statut: "EN_ATTENTE", 
+              fournisseur: { id: 1, nom: "Fournisseur 1", prenom: "" },
+              lignesCommande: [
+                { id: 1, quantite: 50, medicament: { id: 1, nom: "Amoxicilline", prix_unitaire: 85, quantite: 50 } },
+                { id: 2, quantite: 30, medicament: { id: 2, nom: "Doliprane", prix_unitaire: 25, quantite: 30 } }
+              ],
+              montant: 4250
+            },
+            { 
+              id: 2, 
+              pharmacien: { id: 2, nom: "Pharmacie du Soleil", prenom: "" }, 
+              dateCommande: "2025-04-20", 
+              statut: "EN_COURS_DE_LIVRAISON", 
+              fournisseur: { id: 1, nom: "Fournisseur 1", prenom: "" },
+              lignesCommande: [
+                { id: 3, quantite: 20, medicament: { id: 3, nom: "Ventoline", prix_unitaire: 130, quantite: 20 } },
+                { id: 4, quantite: 10, medicament: { id: 4, nom: "Kardégic", prix_unitaire: 75, quantite: 10 } }
+              ],
+              montant: 3600
+            },
+            { 
+              id: 3, 
+              pharmacien: { id: 3, nom: "Pharmacie Moderne", prenom: "" }, 
+              dateCommande: "2025-04-18", 
+              statut: "LIVREE", 
+              fournisseur: { id: 1, nom: "Fournisseur 1", prenom: "" },
+              lignesCommande: [
+                { id: 5, quantite: 25, medicament: { id: 5, nom: "Spasfon", prix_unitaire: 40, quantite: 25 } },
+                { id: 6, quantite: 30, medicament: { id: 6, nom: "Levothyrox", prix_unitaire: 60, quantite: 30 } }
+              ],
+              montant: 2900
+            },
+            { 
+              id: 4, 
+              pharmacien: { id: 4, nom: "Pharmacie des Alpes", prenom: "" }, 
+              dateCommande: "2025-04-15", 
+              statut: "LIVREE",
+              fournisseur: { id: 1, nom: "Fournisseur 1", prenom: "" }, 
+              lignesCommande: [
+                { id: 7, quantite: 60, medicament: { id: 1, nom: "Amoxicilline", prix_unitaire: 85, quantite: 60 } }
+              ],
+              montant: 5100
+            }
+          ];
+          console.log("Using mock commandes data as fallback");
+          setCommandes(mockOrders);
+          setFilteredCommandes(mockOrders);
+        }
+        
+        setLoading(false);
+      } catch (error) {
+        console.error("Error fetching medications:", error);
+        // Continue using mock data
+        const mockMedicaments = [
+          { id: 1, nom: "Amoxicilline", categorie: "Antibiotique", quantite: 200, prix: 85, dateExpiration: "2025-09-15" },
+          { id: 2, nom: "Doliprane", categorie: "Analgésique", quantite: 350, prix: 25, dateExpiration: "2026-03-20" },
+          { id: 3, nom: "Ventoline", categorie: "Respiratoire", quantite: 120, prix: 130, dateExpiration: "2025-11-10" },
+          { id: 4, nom: "Spasfon", categorie: "Antispasmodique", quantite: 180, prix: 40, dateExpiration: "2026-01-05" },
+          { id: 5, nom: "Kardégic", categorie: "Cardiovasculaire", quantite: 90, prix: 75, dateExpiration: "2025-08-22" },
+          { id: 6, nom: "Levothyrox", categorie: "Hormonal", quantite: 110, prix: 60, dateExpiration: "2025-12-18" },
+        ];
+        
+        console.log("Using mock data as fallback");
+        setMedicaments(mockMedicaments);
+        
+        // Keep the rest of your code...
+        setLoading(false);
+      }
+    };
+    
+    fetchMedicaments();
   }, []);
 
   // Filtrer les commandes
@@ -94,7 +242,8 @@ const DashboardFournisseur = () => {
     
     if (searchTerm) {
       results = results.filter(commande => 
-        commande.pharmacie.toLowerCase().includes(searchTerm.toLowerCase())
+        commande.pharmacien?.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        commande.fournisseur?.nom.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
     
@@ -105,31 +254,81 @@ const DashboardFournisseur = () => {
     setFilteredCommandes(results);
   }, [searchTerm, filterStatus, commandes]);
 
-  // Données pour les graphiques
+  // Process chart data from commandes data
+  const processCommandesChartData = () => {
+    const months = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
+    const monthlyData = Array(12).fill(0);
+    
+    if (commandes.length > 0) {
+      commandes.forEach(commande => {
+        if (commande.dateCommande) {
+          const date = new Date(commande.dateCommande);
+          const month = date.getMonth();
+          monthlyData[month] += commande.montant;
+        }
+      });
+    }
+    
+    // Find the first and last months with data
+    let firstMonthWithData = 0;
+    let lastMonthWithData = 11;
+    for (let i = 0; i < 12; i++) {
+      if (monthlyData[i] > 0) {
+        firstMonthWithData = i;
+        break;
+      }
+    }
+    for (let i = 11; i >= 0; i--) {
+      if (monthlyData[i] > 0) {
+        lastMonthWithData = i;
+        break;
+      }
+    }
+    
+    // Ensure we display at least 4 months of data, or all months if we have data for less than 4
+    if (lastMonthWithData - firstMonthWithData < 3) {
+      if (firstMonthWithData <= 8) {
+        lastMonthWithData = Math.min(firstMonthWithData + 3, 11);
+      } else {
+        firstMonthWithData = Math.max(lastMonthWithData - 3, 0);
+      }
+    }
+    
+    // Extract relevant months range for display
+    const labels = months.slice(firstMonthWithData, lastMonthWithData + 1);
+    const data = monthlyData.slice(firstMonthWithData, lastMonthWithData + 1);
+    
+    return { labels, data };
+  };
+
+  // Update the stockData to show medication names and their quantities
   const stockData = {
-    labels: ['Antibiotique', 'Analgésique', 'Respiratoire', 'Antispasmodique', 'Cardiovasculaire', 'Hormonal'],
+    labels: medicaments.length > 0 
+      ? medicaments.map(med => med.nom || "Sans nom")
+      : ['Aucune donnée'],
     datasets: [
       {
-        data: [200, 350, 120, 180, 90, 110],
+        data: medicaments.length > 0 
+          ? medicaments.map(med => med.quantite || 0)
+          : [1],
         backgroundColor: [
-          '#8e44ad',
-          '#9b59b6',
-          '#af7ac5',
-          '#bb8fce',
-          '#d2b4de',
-          '#e8daef',
+          '#8e44ad', '#9b59b6', '#af7ac5', '#bb8fce', '#d2b4de', '#e8daef',
+          '#3498db', '#2980b9', '#1abc9c', '#16a085', '#27ae60', '#2ecc71',
+          '#f1c40f', '#f39c12', '#e67e22', '#d35400', '#e74c3c', '#c0392b'
         ],
         borderWidth: 1,
       },
     ],
   };
 
+  const { labels: commandesLabels, data: commandesMonthlyData } = processCommandesChartData();
+
   const commandesData = {
-    labels: ['Janvier', 'Février', 'Mars', 'Avril'],
+    labels: commandesLabels.length > 0 ? commandesLabels : ['Janvier', 'Février', 'Mars', 'Avril'],
     datasets: [
       {
         label: 'Commandes (DHS)',
-        data: [12000, 9800, 14500, 15850],
+        data: commandesMonthlyData.length > 0 ? commandesMonthlyData : [12000, 9800, 14500, 15850],
         fill: true,
         backgroundColor: 'rgba(84, 181, 95, 0.2)',
         borderColor: '#8e44ad',
@@ -159,6 +358,11 @@ const DashboardFournisseur = () => {
       commande.id === orderId ? { ...commande, statut: newStatus } : commande
     );
     setCommandes(updatedCommandes);
+    setFilteredCommandes(
+      filteredCommandes.map(commande =>
+        commande.id === orderId ? { ...commande, statut: newStatus } : commande
+      )
+    );
   };
 
   // Calcul des statistiques
@@ -166,7 +370,7 @@ const DashboardFournisseur = () => {
     totalMedicaments: medicaments.length,
     totalStock: medicaments.reduce((sum, med) => sum + med.quantite, 0),
     totalCommandes: commandes.length,
-    enAttenteCommandes: commandes.filter(cmd => cmd.statut === "En Attente").length,
+    enAttenteCommandes: commandes.filter(cmd => cmd.statut === "EN_ATTENTE").length,
   };
 
   return (
@@ -241,7 +445,21 @@ const DashboardFournisseur = () => {
                         <Col lg={4} md={12}>
                           <div className="chart-container">
                             <h4>Répartition du Stock</h4>
-                            <Pie data={stockData} options={{ plugins: { legend: { position: 'bottom' } } }} />
+                            {medicaments.length > 0 ? (
+                              <Pie data={stockData} options={{ plugins: { legend: { position: 'bottom' } } }} />
+                            ) : (
+                              <>
+                                <Pie data={stockData} options={{ 
+                                  plugins: { 
+                                    legend: { display: false },
+                                    tooltip: { enabled: false }
+                                  }
+                                }} />
+                                <div className="text-center mt-3 text-muted">
+                                  <p>Aucun médicament disponible</p>
+                                </div>
+                              </>
+                            )}
                           </div>
                         </Col>
                         
@@ -259,7 +477,6 @@ const DashboardFournisseur = () => {
                               <thead>
                                 <tr>
                                   <th>Nom</th>
-                                  <th>Catégorie</th>
                                   <th>Quantité</th>
                                   <th>Prix (DHS)</th>
                                   <th>Date d'expiration</th>
@@ -270,9 +487,8 @@ const DashboardFournisseur = () => {
                                 {medicaments.map(med => (
                                   <tr key={med.id} className="table-row-animate">
                                     <td>{med.nom}</td>
-                                    <td>{med.categorie}</td>
                                     <td>{med.quantite}</td>
-                                    <td>{med.prix} DHS</td>
+                                    <td>{med.prix.toFixed(1)} DHS</td>
                                     <td>{med.dateExpiration}</td>
                                     <td>
                                       <Button variant="outline-primary" size="sm" className="me-1" onClick={() => handleEditMedicament(med)}>
@@ -303,7 +519,7 @@ const DashboardFournisseur = () => {
                           <InputGroup>
                             <InputGroup.Text><FaSearch /></InputGroup.Text>
                             <Form.Control 
-                              placeholder="Rechercher par pharmacie..." 
+                              placeholder="Rechercher par pharmacien..." 
                               onChange={(e) => setSearchTerm(e.target.value)}
                             />
                           </InputGroup>
@@ -316,9 +532,9 @@ const DashboardFournisseur = () => {
                               onChange={(e) => setFilterStatus(e.target.value)}
                             >
                               <option value="Toutes">Toutes les commandes</option>
-                              <option value="En Attente">En Attente</option>
-                              <option value="En Cours De Livraison">En Cours De Livraison</option>
-                              <option value="Livré">Livré</option>
+                              <option value="EN_ATTENTE">En Attente</option>
+                              <option value="EN_COURS_DE_LIVRAISON">En Cours De Livraison</option>
+                              <option value="LIVREE">Livré</option>
                             </Form.Select>
                           </InputGroup>
                         </Col>
@@ -331,7 +547,7 @@ const DashboardFournisseur = () => {
                               <thead>
                                 <tr>
                                   <th>ID</th>
-                                  <th>Pharmacie</th>
+                                  <th>Pharmacien</th>
                                   <th>Date</th>
                                   <th>Statut</th>
                                   <th>Montant (DHS)</th>
@@ -342,26 +558,28 @@ const DashboardFournisseur = () => {
                                 {filteredCommandes.map(commande => (
                                   <tr key={commande.id} className="table-row-animate">
                                     <td>{commande.id}</td>
-                                    <td>{commande.pharmacie}</td>
-                                    <td>{commande.date}</td>
+                                    <td>{commande.pharmacien ? `${commande.pharmacien.nom} ${commande.pharmacien.prenom}` : 'N/A'}</td>
+                                    <td>{commande.dateCommande ? new Date(commande.dateCommande).toLocaleDateString() : 'N/A'}</td>
                                     <td>
                                       <Badge bg={
-                                        commande.statut === "En Attente" ? "warning" :
-                                        commande.statut === "En Cours De Livraison" ? "info" : "success"
+                                        commande.statut === "EN_ATTENTE" ? "warning" :
+                                        commande.statut === "EN_COURS_DE_LIVRAISON" ? "info" : "success"
                                       }>
-                                        {commande.statut}
+                                        {commande.statut === "EN_ATTENTE" ? "En Attente" :
+                                         commande.statut === "EN_COURS_DE_LIVRAISON" ? "En Cours De Livraison" :
+                                         commande.statut === "LIVREE" ? "Livré" : commande.statut}
                                       </Badge>
                                     </td>
-                                    <td>{commande.montant} DHS</td>
+                                    <td>{commande.montant.toFixed(1)} DHS</td>
                                     <td>
                                       <Button variant="outline-primary" size="sm" className="me-1" onClick={() => handleViewOrderDetails(commande)}>
                                         Détails
                                       </Button>
-                                      {commande.statut === "En Attente" && (
+                                      {commande.statut === "EN_ATTENTE" && (
                                         <Button 
                                           variant="outline-info" 
                                           size="sm"
-                                          onClick={() => handleUpdateOrderStatus(commande.id, "En Cours De Livraison")}
+                                          onClick={() => handleUpdateOrderStatus(commande.id, "EN_COURS_DE_LIVRAISON")}
                                         >
                                           Expédier
                                         </Button>
@@ -494,19 +712,21 @@ const DashboardFournisseur = () => {
             <>
               <Row className="mb-4">
                 <Col md={6}>
-                  <p><strong>Pharmacie:</strong> {selectedOrder.pharmacie}</p>
-                  <p><strong>Date:</strong> {selectedOrder.date}</p>
+                  <p><strong>Pharmacien:</strong> {selectedOrder.pharmacien ? `${selectedOrder.pharmacien.nom} ${selectedOrder.pharmacien.prenom}` : 'N/A'}</p>
+                  <p><strong>Date:</strong> {selectedOrder.dateCommande ? new Date(selectedOrder.dateCommande).toLocaleDateString() : 'N/A'}</p>
                 </Col>
                 <Col md={6}>
                   <p><strong>Statut:</strong> 
                     <Badge bg={
-                      selectedOrder.statut === "En Attente" ? "warning" :
-                      selectedOrder.statut === "En Cours De Livraison" ? "info" : "success"
+                      selectedOrder.statut === "EN_ATTENTE" ? "warning" :
+                      selectedOrder.statut === "EN_COURS_DE_LIVRAISON" ? "info" : "success"
                     } className="ms-2">
-                      {selectedOrder.statut}
+                      {selectedOrder.statut === "EN_ATTENTE" ? "En Attente" :
+                       selectedOrder.statut === "EN_COURS_DE_LIVRAISON" ? "En Cours De Livraison" :
+                       selectedOrder.statut === "LIVREE" ? "Livré" : selectedOrder.statut}
                     </Badge>
                   </p>
-                  <p><strong>Montant Total:</strong> {selectedOrder.montant} DHS</p>
+                  <p><strong>Montant Total:</strong> {selectedOrder.montant.toFixed(1)} DHS</p>
                 </Col>
               </Row>
               
@@ -521,25 +741,25 @@ const DashboardFournisseur = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {selectedOrder.produits.map((produit, index) => (
-                    <tr key={index}>
-                      <td>{produit.nom}</td>
-                      <td>{produit.quantite}</td>
-                      <td>{produit.prix} DHS</td>
-                      <td>{produit.quantite * produit.prix} DHS</td>
+                  {selectedOrder.lignesCommande.map((ligne) => (
+                    <tr key={ligne.id}>
+                      <td>{ligne.medicament.nom}</td>
+                      <td>{ligne.quantite}</td>
+                      <td>{ligne.medicament.prix_unitaire.toFixed(1)} DHS</td>
+                      <td>{(ligne.quantite * ligne.medicament.prix_unitaire).toFixed(1)} DHS</td>
                     </tr>
                   ))}
                 </tbody>
               </Table>
               
-              {selectedOrder.statut === "En Attente" && (
+              {selectedOrder.statut === "EN_ATTENTE" && (
                 <div className="mt-4">
                   <h5>Mettre à jour le statut</h5>
                   <div className="d-flex gap-2">
                     <Button 
                       variant="info" 
                       onClick={() => {
-                        handleUpdateOrderStatus(selectedOrder.id, "En Cours De Livraison");
+                        handleUpdateOrderStatus(selectedOrder.id, "EN_COURS_DE_LIVRAISON");
                         setShowOrderDetails(false);
                       }}
                     >
@@ -548,7 +768,7 @@ const DashboardFournisseur = () => {
                     <Button 
                       variant="success" 
                       onClick={() => {
-                        handleUpdateOrderStatus(selectedOrder.id, "Livré");
+                        handleUpdateOrderStatus(selectedOrder.id, "LIVREE");
                         setShowOrderDetails(false);
                       }}
                     >
@@ -558,13 +778,13 @@ const DashboardFournisseur = () => {
                 </div>
               )}
               
-              {selectedOrder.statut === "En Cours De Livraison" && (
+              {selectedOrder.statut === "EN_COURS_DE_LIVRAISON" && (
                 <div className="mt-4">
                   <h5>Mettre à jour le statut</h5>
                   <Button 
                     variant="success" 
                     onClick={() => {
-                      handleUpdateOrderStatus(selectedOrder.id, "Livré");
+                      handleUpdateOrderStatus(selectedOrder.id, "LIVREE");
                       setShowOrderDetails(false);
                     }}
                   >

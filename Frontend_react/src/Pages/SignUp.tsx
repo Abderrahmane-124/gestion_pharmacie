@@ -53,9 +53,9 @@ export default function SignUp() {
       
       // Redirect based on role
       if (formData.role === "PHARMACIEN") {
-        navigate("/PharmacienDashboard");
+        navigate("/dashboard-pharmacien");
       } else if (formData.role === "FOURNISSEUR") {
-        navigate("/FournisseurDashboard");
+        navigate("/dashboard-Fornisseur");
       } else {
         // Default fallback
         navigate("/");

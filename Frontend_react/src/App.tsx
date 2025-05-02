@@ -10,41 +10,84 @@ import VentePharmacien from "./Pages/VentePharmacien";
 import DashboardFournisseur from "./Pages/DashbordFournisseur";
 import Alerte from "./Pages/Alerte";
 import HistoriqueVente from "./Pages/HistoriqueVente";
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { AuthProvider } from "./context/AuthContext";
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from "./context/AuthContext";
 import Homepage from "./Pages/HomePage";
 import LoginPage from "./Pages/Loginpage";
+import { JSX, useEffect } from "react";
+import React from "react";
 
+// Protected route component that checks authentication
+const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
+  const { isAuthenticated } = useAuth();
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  return children;
+};
 
-
+// Public route component that always logs out authenticated users
+const PublicRoute = ({ children }: { children: JSX.Element }) => {
+  const { isAuthenticated, logout } = useAuth();
+  
+  useEffect(() => {
+    // Always logout when accessing public routes
+    if (isAuthenticated) {
+      logout();
+    }
+  }, [isAuthenticated, logout]);
+  
+  return children;
+};
 
 function AppRoutes() {
+  // Set state for protected routes to track navigation
+  const setProtectedState = (element: JSX.Element) => {
+    return (
+      <ProtectedRoute>
+        {React.cloneElement(element, { state: { fromProtected: true } })}
+      </ProtectedRoute>
+    );
+  };
+  
   return (
-      <Routes>
-        <Route path="/" element={<Homepage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/signup" element={<SignUp />} />
-        <Route path="/dashboard-pharmacien" element={<PharmacienDashboard />} />
-        <Route path="/mes-medicaments" element={<MesMedicaments />} />
-        <Route path="/medicament/:id" element={<MedicamentDetail />} />
-        <Route path="/statistique" element={<Statistique/>} />
-        <Route path="/panier" element={<Panier />} />
-        <Route path="/confirmation-commande" element={<ConfirmationCommande />} />
-        
-        <Route path="/VisualiserVente/:id" element={<VisualiserVente />} />
-        <Route path="/vente-pharmacien" element={<VentePharmacien />} />
-        <Route path="/dashboard-Fornisseur" element={<DashboardFournisseur />} />
-        <Route path="/alerte" element={<Alerte />} />
-        <Route path="/historique-vente" element={<HistoriqueVente />} />
-
-        {/* Add more routes as needed */}
-
-     
-      </Routes>
-
-
+    <Routes>
+      {/* Public Routes */}
+      <Route path="/" element={
+        <PublicRoute>
+          <Homepage />
+        </PublicRoute>
+      } />
+      <Route path="/login" element={
+        <PublicRoute>
+          <LoginPage />
+        </PublicRoute>
+      } />
+      <Route path="/signup" element={
+        <PublicRoute>
+          <SignUp />
+        </PublicRoute>
+      } />
+      
+      {/* Protected Routes */}
+      <Route path="/dashboard-pharmacien" element={setProtectedState(<PharmacienDashboard />)} />
+      <Route path="/mes-medicaments" element={setProtectedState(<MesMedicaments />)} />
+      <Route path="/medicament/:id" element={setProtectedState(<MedicamentDetail />)} />
+      <Route path="/statistique" element={setProtectedState(<Statistique />)} />
+      <Route path="/panier" element={setProtectedState(<Panier />)} />
+      <Route path="/confirmation-commande" element={setProtectedState(<ConfirmationCommande />)} />
+      <Route path="/VisualiserVente/:id" element={setProtectedState(<VisualiserVente />)} />
+      <Route path="/vente-pharmacien" element={setProtectedState(<VentePharmacien />)} />
+      <Route path="/dashboard-Fornisseur" element={setProtectedState(<DashboardFournisseur />)} />
+      <Route path="/alerte" element={setProtectedState(<Alerte />)} />
+      <Route path="/historique-vente" element={setProtectedState(<HistoriqueVente />)} />
+      
+      {/* Fallback route */}
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
-  // Remove this duplicate export and move the VisualiserVente function to its own file if needed.
 }
 
 export default function App() {

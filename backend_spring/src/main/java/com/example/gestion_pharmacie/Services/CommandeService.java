@@ -114,6 +114,23 @@ public class CommandeService {
                 .collect(Collectors.toList());
     }
 
+    public List<CommandeResponseDto> getCommandesForCurrentFournisseur() {
+        Fournisseur fournisseur = userService.getCurrentFournisseur();
+        List<Commande> commandes = commandeRepository.findByFournisseur(fournisseur);
+        return commandes.stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+
+//    public List<CommandeResponseDto> getCommandesForCurrentUser() {
+//        Utilisateur utilisateur = userService.getCurrentUser();
+//        List<Commande> commandes = commandeRepository.findByUser(utilisateur);
+//        return commandes.stream()
+//                .map(this::convertToDto)
+//                .collect(Collectors.toList());
+//    }
+
+
     public List<CommandeResponseDto> getAllCommandes() {
         List<Commande> commandes = commandeRepository.findAll();
         return commandes.stream()

@@ -52,9 +52,9 @@ export default function LoginPage() {
           
           // Redirect based on role
           if (currentUser.role === "PHARMACIEN") {
-            navigate("/PharmacienDashboard");
+            navigate("/dashboard-pharmacien");
           } else if (currentUser.role === "FOURNISSEUR") {
-            navigate("/FournisseurDashboard");
+            navigate("/dashboard-Fornisseur");
           } else {
             navigate("/");
           }

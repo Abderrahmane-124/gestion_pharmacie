@@ -26,10 +26,11 @@ public class CommandeController {
         return ResponseEntity.ok(commandeService.createCommande(request));
     }
 
-    @PreAuthorize("hasAnyRole('PHARMACIEN', 'FOURNISSEUR')")
-    @GetMapping
-    public ResponseEntity<List<CommandeResponseDto>> getCommandesPharmacien() {
-        return ResponseEntity.ok(commandeService.getCommandesForCurrentPharmacien());
+
+
+    @GetMapping("/current_user")
+    public ResponseEntity<List<CommandeResponseDto>> getCommandesFoCurrentUser() {
+        return ResponseEntity.ok(commandeService.getCommandesForCurrentFournisseur());
     }
 
     @GetMapping("/all")
