@@ -95,7 +95,7 @@ public class ExcelLoaderService {
                             appendFieldIfExists(row, columnIndexMap, "FORME", description, "Forme: ");
                             appendFieldIfExists(row, columnIndexMap, "PRESENTATION", description, "Présentation: ");
 
-                            medicament.setDescription(description.toString().trim());
+                            medicament.setIndications(description.toString().trim());
 
                             workbook.close();
                             return medicament;

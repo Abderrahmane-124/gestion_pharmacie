@@ -21,7 +21,8 @@ public class PanierResponseDto {
     public static class MedicamentDto {
         private Long id;
         private String nom;
-        private double prix_unitaire;
+        private float prix_hospitalier;
+        private float prix_public;
         private Integer quantite;
     }
 }

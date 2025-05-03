@@ -1,6 +1,7 @@
 package com.example.gestion_pharmacie.Controllers;
 
 import com.example.gestion_pharmacie.Services.ExcelLoaderService;
+import com.example.gestion_pharmacie.Services.MedicamentScraperService;
 import com.example.gestion_pharmacie.Services.MedicamentService;
 import com.example.gestion_pharmacie.entites.Medicament;
 import org.springframework.http.HttpStatus;
@@ -8,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.List;
 
 
@@ -16,11 +18,14 @@ import java.util.List;
 public class MedicamentController {
     private final MedicamentService medicamentService;
     private final ExcelLoaderService excelLoaderService;
+    private final MedicamentScraperService medicamentScraperService;
 
 
-    public MedicamentController(MedicamentService medicamentService, ExcelLoaderService excelLoaderService) {
+
+    public MedicamentController(MedicamentService medicamentService, ExcelLoaderService excelLoaderService, MedicamentScraperService medicamentScraperService) {
         this.medicamentService = medicamentService;
         this.excelLoaderService = excelLoaderService;
+        this.medicamentScraperService = medicamentScraperService;
     }
 
     @PreAuthorize("hasAnyRole('FOURNISSEUR', 'PHARMACIEN')")
@@ -69,4 +74,22 @@ public class MedicamentController {
     public ResponseEntity<List<Medicament>> searchMedicaments(@RequestParam String nom) {
         return ResponseEntity.ok(medicamentService.searchMedicaments(nom));
     }
+
+
+    //WEB SCRAPPING
+    @GetMapping("/search-online")
+        public ResponseEntity<?> searchMedicamentOnline(@RequestParam String name) {
+            try {
+                Medicament medicament = medicamentScraperService.findMedicamentByName(name);
+                if (medicament != null) {
+                    return ResponseEntity.ok(medicament);
+                } else {
+                    return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("No medication found with name: " + name);
+                }
+            } catch (IOException e) {
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error searching for medication: " + e.getMessage());
+            }
+        }
 }

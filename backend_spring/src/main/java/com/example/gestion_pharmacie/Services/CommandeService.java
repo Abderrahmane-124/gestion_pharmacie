@@ -227,9 +227,14 @@ public class CommandeService {
                 // Create new medication for pharmacist
                 Medicament newMed = new Medicament();
                 newMed.setNom(commandeMed.getNom());
-                newMed.setDescription(commandeMed.getDescription());
-                newMed.setPrix_unitaire(commandeMed.getPrix_unitaire());
-                newMed.setDate_expiration(commandeMed.getDate_expiration());
+                newMed.setIndications(commandeMed.getIndications());
+                newMed.setCode_ATC(commandeMed.getCode_ATC());
+                newMed.setDosage(commandeMed.getDosage());
+                newMed.setPresentation(commandeMed.getPresentation());
+                newMed.setPrix_hospitalier(commandeMed.getPrix_hospitalier());
+                newMed.setPrix_public(commandeMed.getPrix_public());
+                newMed.setComposition(commandeMed.getComposition());
+                newMed.setClasse_therapeutique(commandeMed.getClasse_therapeutique());
                 newMed.setQuantite(quantite);
                 newMed.setUtilisateur(pharmacien);
                 medicamentRepository.save(newMed);
@@ -273,7 +278,8 @@ public class CommandeService {
                     CommandeResponseDto.MedicamentBasicDto medicamentDto = new CommandeResponseDto.MedicamentBasicDto();
                     medicamentDto.setId(ligne.getMedicament().getId());
                     medicamentDto.setNom(ligne.getMedicament().getNom());
-                    medicamentDto.setPrix_unitaire(ligne.getMedicament().getPrix_unitaire());
+                    medicamentDto.setPrix_hospitalier(ligne.getMedicament().getPrix_hospitalier());
+                    medicamentDto.setPrix_public(ligne.getMedicament().getPrix_public());
                     medicamentDto.setQuantite(ligne.getMedicament().getQuantite());
                     ligneDto.setMedicament(medicamentDto);
 

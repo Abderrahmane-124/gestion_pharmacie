@@ -55,7 +55,7 @@ public class MedicamentService {
         }
 
         // Set default values for other fields
-        medicament.setPrix_unitaire(0);
+        medicament.setPrix_hospitalier(0);
         medicament.setQuantite(0);
 
         // Associate with the user
@@ -65,7 +65,7 @@ public class MedicamentService {
         return medicamentRepository.save(medicament);
     }
 
-    public Medicament updateMedicament(Long id, Medicament medicament) {
+     public Medicament updateMedicament(Long id, Medicament medicament) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
 
@@ -74,7 +74,6 @@ public class MedicamentService {
 
         return medicamentRepository.findById(id)
                 .map(existingMedicament -> {
-                    // Check if the current user owns this medication
                     boolean isOwner = false;
                     if (existingMedicament.getUtilisateur() != null &&
                             existingMedicament.getUtilisateur().getId().equals(utilisateur.getId())) {
@@ -85,10 +84,15 @@ public class MedicamentService {
                         throw new RuntimeException("Vous n'êtes pas autorisé à modifier ce médicament");
                     }
 
-                    // Update fields
                     if (medicament.getNom() != null) existingMedicament.setNom(medicament.getNom());
-                    if (medicament.getDescription() != null) existingMedicament.setDescription(medicament.getDescription());
-                    if (medicament.getPrix_unitaire() != 0) existingMedicament.setPrix_unitaire(medicament.getPrix_unitaire());
+                    if (medicament.getIndications() != null) existingMedicament.setIndications(medicament.getIndications());
+                    if (medicament.getCode_ATC() != null) existingMedicament.setCode_ATC(medicament.getCode_ATC());
+                    if (medicament.getDosage() != null) existingMedicament.setDosage(medicament.getDosage());
+                    if (medicament.getPresentation() != null) existingMedicament.setPresentation(medicament.getPresentation());
+                    if (medicament.getPrix_hospitalier() != 0) existingMedicament.setPrix_hospitalier(medicament.getPrix_hospitalier());
+                    if (medicament.getPrix_public() != 0) existingMedicament.setPrix_public(medicament.getPrix_public());
+                    if (medicament.getComposition() != null) existingMedicament.setComposition(medicament.getComposition());
+                    if (medicament.getClasse_therapeutique() != null) existingMedicament.setClasse_therapeutique(medicament.getClasse_therapeutique());
                     if (medicament.getDate_expiration() != null) existingMedicament.setDate_expiration(medicament.getDate_expiration());
                     if (medicament.getQuantite() != 0) existingMedicament.setQuantite(medicament.getQuantite());
 
@@ -96,6 +100,7 @@ public class MedicamentService {
                 })
                 .orElseThrow(() -> new RuntimeException("Medicament not found"));
     }
+
 
     public void deleteMedicament(Long id) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();

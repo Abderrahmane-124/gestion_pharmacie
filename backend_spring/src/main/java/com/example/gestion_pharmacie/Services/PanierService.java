@@ -113,7 +113,8 @@ public class PanierService {
                     PanierResponseDto.MedicamentDto medicamentDto = new PanierResponseDto.MedicamentDto();
                     medicamentDto.setId(ligne.getMedicament().getId());
                     medicamentDto.setNom(ligne.getMedicament().getNom());
-                    medicamentDto.setPrix_unitaire(ligne.getMedicament().getPrix_unitaire());
+                    medicamentDto.setPrix_hospitalier(ligne.getMedicament().getPrix_hospitalier());
+                    medicamentDto.setPrix_public(ligne.getMedicament().getPrix_public());
                     medicamentDto.setQuantite(ligne.getMedicament().getQuantite());
                     ligneDto.setMedicament(medicamentDto);
 
