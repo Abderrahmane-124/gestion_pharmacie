@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 
 @RestController
@@ -34,10 +35,10 @@ public class MedicamentController {
         return ResponseEntity.ok(medicamentService.saveMedicament(medicament));
     }
 
-    @PostMapping("/add-from-excel")
-    public ResponseEntity<Medicament> addMedicamentFromExcel(@RequestParam String code) {
-        return ResponseEntity.ok(medicamentService.addMedicamentFromExcel(code));
-    }
+//    @PostMapping("/add-from-excel")
+//    public ResponseEntity<Medicament> addMedicamentFromExcel(@RequestParam String code) {
+//        return ResponseEntity.ok(medicamentService.addMedicamentFromExcel(code));
+//    }
 
     @PreAuthorize("hasAnyRole('FOURNISSEUR', 'PHARMACIEN')")
     @PutMapping("/{id}")
@@ -64,10 +65,10 @@ public class MedicamentController {
         return ResponseEntity.ok(medicamentService.getAllMedicaments());
     }
 
-    @GetMapping("/excel")
-    public List<List<String>> getExcelData() {
-        return excelLoaderService.readExcelData();
-    }
+//    @GetMapping("/excel")
+//    public List<List<String>> getExcelData() {
+//        return excelLoaderService.readExcelData();
+//    }
 
     @PreAuthorize("hasAnyRole('PHARMACIEN', 'FOURNISSEUR')")
     @GetMapping("/search")
@@ -77,19 +78,24 @@ public class MedicamentController {
 
 
     //WEB SCRAPPING
-    @GetMapping("/search-online")
-        public ResponseEntity<?> searchMedicamentOnline(@RequestParam String name) {
-            try {
-                Medicament medicament = medicamentScraperService.findMedicamentByName(name);
-                if (medicament != null) {
-                    return ResponseEntity.ok(medicament);
-                } else {
-                    return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body("No medication found with name: " + name);
-                }
-            } catch (IOException e) {
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error searching for medication: " + e.getMessage());
-            }
+
+    @GetMapping("/progressive-search")
+    public ResponseEntity<List<Medicament>> progressiveSearch(@RequestParam String query) {
+        try {
+            List<Medicament> results = medicamentScraperService.progressiveSearch(query);
+            return ResponseEntity.ok(results);
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
+    }
+    @PostMapping("/detailed-scrape")
+    public ResponseEntity<Medicament> getDetailedMedicamentInfo(@RequestBody Map<String, String> payload) {
+        try {
+            String url = payload.get("url");
+            Medicament medicament = medicamentScraperService.getDetailedMedicamentInfo(url);
+            return ResponseEntity.ok(medicament);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
 }
