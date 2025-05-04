@@ -1,6 +1,6 @@
 // DashboardFournisseur.tsx
 import { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Button, Table, Form, Badge, Tabs, Tab, Modal, InputGroup } from 'react-bootstrap';
+import { Container, Row, Col, Card, Button, Table, Form, Badge, Tabs, Tab, Modal, InputGroup, ListGroup } from 'react-bootstrap';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, Title, BarElement } from 'chart.js';
 import { Pie, Line } from 'react-chartjs-2';
 import { FaPills, FaClipboardList, FaTruck, FaWarehouse, FaSearch, FaEdit, FaTrash, FaPlus, FaFilter } from 'react-icons/fa';
@@ -27,6 +27,9 @@ const DashboardFournisseur = () => {
   const [filterStatus, setFilterStatus] = useState('Toutes');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [searchMedicament, setSearchMedicament] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
   interface Medicament {
     id: number;
     nom: string;
@@ -337,10 +340,261 @@ const DashboardFournisseur = () => {
     ],
   };
 
+  // Function to search medicaments from web scraping - improved version
+  const searchMedicamentsFromWeb = async (query: string) => {
+    if (!query.trim()) {
+      setSearchResults([]);
+      return;
+    }
+
+    try {
+      setIsSearching(true);
+      const token = localStorage.getItem('token');
+      
+      // Use the new progressive search endpoint
+      const response = await fetch(`http://localhost:8080/medicaments/progressive-search?query=${encodeURIComponent(query)}`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Error searching medicaments: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log("Progressive search results:", data);
+      setSearchResults(data || []);
+    } catch (error) {
+      console.error("Error searching medicaments:", error);
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // Function to fetch detailed medicament information from the scraper
+  const fetchDetailedMedicamentInfo = async (medicamentName: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      
+      // First try to search for the URL if we only have a name
+      if (!medicamentName.includes('http')) {
+        const searchResponse = await fetch(`http://localhost:8080/medicaments/progressive-search?query=${encodeURIComponent(medicamentName)}`, {
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+          },
+        });
+        
+        if (searchResponse.ok) {
+          const results = await searchResponse.json();
+          // Get first result's URL if available
+          if (results && results.length > 0 && results[0].url) {
+            medicamentName = results[0].url;
+          } else {
+            throw new Error("Couldn't find medication URL");
+          }
+        }
+      }
+      
+      // Now make the detailed-scrape request with the URL
+      const response = await fetch(`http://localhost:8080/medicaments/detailed-scrape`, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ url: medicamentName })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Error fetching detailed information: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      updateFormWithDetailedData(data);
+    } catch (error) {
+      console.error("Error fetching detailed medicament information:", error);
+      
+      // Remove loading indicators
+      const loadingIndicator = document.querySelector('.modal-body .position-absolute');
+      if (loadingIndicator) {
+        loadingIndicator.remove();
+      }
+    }
+  };
+  
+  // Function to populate form with basic data
+  const populateFormWithBasicData = (med: any) => {
+    // Get form and set fields
+    const form = document.querySelector('.modal-body form');
+    if (!form) {
+      console.error("Form not found");
+      return;
+    }
+
+    // Set field helper function
+    const setField = (id: string, value: any) => {
+      const input = document.getElementById(id) as HTMLInputElement;
+      if (input) {
+        if (value !== null && value !== undefined) {
+          input.value = value.toString();
+          // Add a visual indicator that the field was populated
+          input.style.backgroundColor = "#f8f9fa";
+          setTimeout(() => input.style.backgroundColor = "", 500);
+        }
+      } else {
+        console.warn(`Element with id ${id} not found`);
+      }
+    };
+    
+    // Set the name initially with full title
+    setField('med-nom', med.nom || '');
+    
+    // Default quantity to 1
+    setField('med-quantite', 1);
+    
+    // Leave date d'expiration empty - will be filled from scraped data if available
+    // Don't set a default value
+    
+    console.log("Form prepared for detailed data");
+  };
+  
+  // Handle selecting a medication from search results
+  const handleSelectMedicament = (med: any) => {
+    console.log("Selected medicament:", med);
+    
+    // Populate minimal information first
+    populateFormWithBasicData(med);
+    
+    // Then fetch detailed information from scraper
+    // Use the URL from tableau field if available
+    fetchDetailedMedicamentInfo(med.tableau || med.nom);
+  };
+  
+  // Update form with detailed data
+  const updateFormWithDetailedData = (data: any) => {
+    const setField = (id: string, value: any) => {
+      const input = document.getElementById(id) as HTMLInputElement;
+      if (input && value !== null && value !== undefined && value !== '') {
+        input.value = value.toString();
+        // Give different color to show it's updated with detailed data
+        input.style.backgroundColor = "#e6f7ff";
+        setTimeout(() => input.style.backgroundColor = "", 800);
+      }
+    };
+    
+    if (data) {
+      // Make sure to set the full title name
+      setField('med-nom', data.nom);
+      setField('med-code-atc', data.code_ATC);
+      setField('med-dosage', data.dosage);
+      setField('med-presentation', data.presentation);
+      setField('med-prix-public', data.prix_public);
+      setField('med-prix-hospitalier', data.prix_hospitalier);
+      setField('med-composition', data.composition);
+      setField('med-classe', data.classe_therapeutique);
+      setField('med-indications', data.indications);
+      setField('med-nature', data.natureDuProduit);
+      setField('med-tableau', data.tableau);
+      
+      // Set date_expiration if it exists in the data
+      if (data.date_expiration) {
+        setField('med-date-expiration', data.date_expiration);
+      }
+    }
+  };
+
+  // Debounce search to prevent too many API calls
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchMedicament) {
+        searchMedicamentsFromWeb(searchMedicament);
+      }
+    }, 100); // Reduced timeout to make search more responsive
+    
+    return () => clearTimeout(timer);
+  }, [searchMedicament]);
+
   // Gestion des modals
-  const handleAddMedicament = () => {
-    setShowAddModal(false);
-    // Logique pour ajouter un médicament
+  const handleAddMedicament = async () => {
+    try {
+      // Format date properly for Java backend
+      const dateInput = document.getElementById('med-date-expiration') as HTMLInputElement;
+      let dateExpiration = null;
+      if (dateInput.value) {
+        // Convert date string to ISO format
+        dateExpiration = new Date(dateInput.value).toISOString();
+      }
+      
+      // Get values from form inputs
+      const medicament = {
+        nom: (document.getElementById('med-nom') as HTMLInputElement).value,
+        code_ATC: (document.getElementById('med-code-atc') as HTMLInputElement).value,
+        dosage: (document.getElementById('med-dosage') as HTMLInputElement).value,
+        presentation: (document.getElementById('med-presentation') as HTMLInputElement).value,
+        prix_hospitalier: parseFloat((document.getElementById('med-prix-hospitalier') as HTMLInputElement).value) || 0,
+        prix_public: parseFloat((document.getElementById('med-prix-public') as HTMLInputElement).value) || 0,
+        composition: (document.getElementById('med-composition') as HTMLInputElement).value,
+        classe_therapeutique: (document.getElementById('med-classe') as HTMLInputElement).value,
+        quantite: parseInt((document.getElementById('med-quantite') as HTMLInputElement).value) || 0,
+        date_expiration: dateExpiration,
+        indications: (document.getElementById('med-indications') as HTMLInputElement).value,
+        natureDuProduit: (document.getElementById('med-nature') as HTMLInputElement).value,
+        tableau: (document.getElementById('med-tableau') as HTMLInputElement).value
+      };
+      
+      console.log("Sending medicament data:", medicament);
+      
+      // Get token from localStorage
+      const token = localStorage.getItem('token');
+      
+      // Send POST request to add medicament
+      const response = await fetch('http://localhost:8080/medicaments', {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify(medicament)
+      });
+      
+      console.log("Response status:", response.status);
+      
+      if (!response.ok) {
+        throw new Error(`Error adding medicament: ${response.status}`);
+      }
+      
+      const responseText = await response.text();
+      console.log("Raw response:", responseText);
+      
+      // Check if response is not empty before parsing
+      if (responseText) {
+        const savedMedicament = JSON.parse(responseText);
+        // Add the new medicament to the state
+        setMedicaments([...medicaments, savedMedicament]);
+      } else {
+        // If response is empty but status is OK, we'll just refresh the data
+        console.log("Empty response but OK status, fetching updated medicament list");
+        // You may want to fetch updated medicament list here
+      }
+      
+      // Close the modal
+      setShowAddModal(false);
+      
+      // Show success message
+      alert('Médicament ajouté avec succès!');
+    } catch (error) {
+      console.error('Error saving medicament:', error);
+      alert('Erreur lors de l\'ajout du médicament');
+    }
   };
 
   const handleEditMedicament = (medicament: Medicament) => {
@@ -609,46 +863,124 @@ const DashboardFournisseur = () => {
       )}
       
       {/* Modal pour ajouter un médicament */}
-      <Modal show={showAddModal} onHide={() => setShowAddModal(false)}>
+      <Modal show={showAddModal} onHide={() => setShowAddModal(false)} size="xl">
         <Modal.Header closeButton>
           <Modal.Title>Ajouter un médicament</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <Form>
-            <Form.Group className="mb-3">
-              <Form.Label>Nom du médicament</Form.Label>
-              <Form.Control type="text" placeholder="Entrez le nom" />
-            </Form.Group>
-            <Form.Group className="mb-3">
-              <Form.Label>Catégorie</Form.Label>
-              <Form.Select>
-                <option>Antibiotique</option>
-                <option>Analgésique</option>
-                <option>Respiratoire</option>
-                <option>Antispasmodique</option>
-                <option>Cardiovasculaire</option>
-                <option>Hormonal</option>
-              </Form.Select>
-            </Form.Group>
-            <Form.Group className="mb-3">
-              <Form.Label>Quantité</Form.Label>
-              <Form.Control type="number" min="1" placeholder="Quantité" />
-            </Form.Group>
-            <Form.Group className="mb-3">
-              <Form.Label>Prix (DHS)</Form.Label>
-              <Form.Control type="number" min="0" step="0.01" placeholder="Prix unitaire" />
-            </Form.Group>
-            <Form.Group className="mb-3">
-              <Form.Label>Date d'expiration</Form.Label>
-              <Form.Control type="date" />
-            </Form.Group>
-          </Form>
+          <Row>
+            <Col md={6}>
+              <Form.Group className="mb-3">
+                <Form.Label>Rechercher un médicament</Form.Label>
+                <Form.Control 
+                  type="text" 
+                  placeholder="Saisir le nom du médicament..." 
+                  value={searchMedicament}
+                  onChange={(e) => setSearchMedicament(e.target.value)}
+                />
+              </Form.Group>
+              
+              {isSearching && (
+                <div className="text-center my-2">
+                  <div className="spinner-border spinner-border-sm" role="status">
+                    <span className="visually-hidden">Recherche en cours...</span>
+                  </div>
+                </div>
+              )}
+              
+              {searchResults.length > 0 && (
+                <div className="search-results-container mb-3" style={{overflowY: 'auto', border: '1px solid #ddd', borderRadius: '4px'}}>
+                  <ListGroup>
+                    {searchResults.map((med, index) => (
+                      <ListGroup.Item 
+                        key={index} 
+                        action 
+                        onClick={() => handleSelectMedicament(med)}
+                        className="py-2"
+                      >
+                        <div><strong>{med.nom}</strong></div>
+                        {med.description && <small>{med.description}</small>}
+                      </ListGroup.Item>
+                    ))}
+                  </ListGroup>
+                </div>
+              )}
+              
+              {searchMedicament && searchResults.length === 0 && !isSearching && (
+                <p className="text-muted">Aucun médicament trouvé</p>
+              )}
+            </Col>
+            
+            <Col md={6}>
+              <Form onSubmit={(e) => e.preventDefault()}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Nom du médicament</Form.Label>
+                  <Form.Control type="text" placeholder="Entrez le nom" id="med-nom" />
+                </Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Label>Code ATC</Form.Label>
+                  <Form.Control type="text" placeholder="Code ATC" id="med-code-atc" />
+                </Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Label>Dosage</Form.Label>
+                  <Form.Control type="text" placeholder="Dosage" id="med-dosage" />
+                </Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Label>Présentation</Form.Label>
+                  <Form.Control type="text" placeholder="Présentation" id="med-presentation" />
+                </Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Label>Prix Public (DHS)</Form.Label>
+                  <Form.Control type="number" min="0" step="0.01" placeholder="Prix public" id="med-prix-public" />
+                </Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Label>Prix Hospitalier (DHS)</Form.Label>
+                  <Form.Control type="number" min="0" step="0.01" placeholder="Prix hospitalier" id="med-prix-hospitalier" />
+                </Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Label>Composition</Form.Label>
+                  <Form.Control type="text" placeholder="Composition" id="med-composition" />
+                </Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Label>Classe Thérapeutique</Form.Label>
+                  <Form.Control type="text" placeholder="Classe thérapeutique" id="med-classe" />
+                </Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Label>Quantité</Form.Label>
+                  <Form.Control type="number" min="1" placeholder="Quantité" id="med-quantite" />
+                </Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Label>Date d'expiration</Form.Label>
+                  <Form.Control type="date" id="med-date-expiration" />
+                </Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Label>Indications</Form.Label>
+                  <Form.Control as="textarea" rows={2} placeholder="Indications" id="med-indications" />
+                </Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Label>Nature du Produit</Form.Label>
+                  <Form.Control type="text" placeholder="Nature du produit" id="med-nature" />
+                </Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Label>Tableau</Form.Label>
+                  <Form.Control type="text" placeholder="Tableau" id="med-tableau" />
+                </Form.Group>
+              </Form>
+            </Col>
+          </Row>
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={() => setShowAddModal(false)}>
             Annuler
           </Button>
-          <Button variant="primary" onClick={handleAddMedicament}>
+          <Button 
+            variant="primary" 
+            onClick={(e) => {
+              e.preventDefault(); // Prevent default behavior
+              handleAddMedicament();
+            }}
+            type="button" // Explicitly set as button type, not submit
+          >
             Ajouter
           </Button>
         </Modal.Footer>
