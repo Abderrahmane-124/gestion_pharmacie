@@ -1,33 +1,90 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "../Styles/PharmacienDashboard.css";
 import { FaSearch } from "react-icons/fa";
+import axios from "axios";
+
+interface Medicament {
+  id: number;
+  nom: string;
+  prix_hospitalier: number;
+  quantite: number;
+  date_expiration: string;
+  en_vente: boolean;
+  utilisateur: {
+    id: number;
+    nom: string;
+    prenom: string;
+  };
+}
+
+interface Fournisseur {
+  id: number;
+  nom: string;
+  prenom: string;
+  email: string;
+  telephone: string;
+}
 
 export default function PharmacienDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
   const [searchType, setSearchType] = useState<"medicament" | "fournisseur">("medicament");
+  const [activeView, setActiveView] = useState<"medicaments" | "fournisseurs">("medicaments");
+  const [medicamentsEnVente, setMedicamentsEnVente] = useState<Medicament[]>([]);
+  const [fournisseurs, setFournisseurs] = useState<Fournisseur[]>([]);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const medicaments = [
-    { nom: "Aspirine", prix: "16.70dhs", quantite: 120, exp: "06/26" },
-    { nom: "Advil", prix: "33.00dhs", quantite: 170, exp: "08/26" },
-    { nom: "Valium", prix: "22.70dhs", quantite: 16, exp: "07/26" },
-    { nom: "Dafalgan", prix: "14.90dhs", quantite: 140, exp: "06/26" },
-  ];
+  const fetchMedicamentsEnVente = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      
+      const response = await axios.get("http://localhost:8080/medicaments/en-vente", {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      setMedicamentsEnVente(response.data);
+    } catch (error) {
+      console.error("Error fetching medicaments:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const fournisseurs = [
-    { nom: "Hind", contact: "06 23 45 67 89" },
-    { nom: "Abderrahmane", contact: "06 23 45 67 90" },
-    { nom: "Robert", contact: "06 23 45 67 91" },
-    { nom: "Asma", contact: "06 23 45 67 92" },
-  ];
+  const fetchFournisseurs = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      
+      const response = await axios.get("http://localhost:8080/api/utilisateurs/fournisseurs", {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      setFournisseurs(response.data);
+    } catch (error) {
+      console.error("Error fetching fournisseurs:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const filteredMedicaments = medicaments.filter((m) =>
+  useEffect(() => {
+    if (activeView === "medicaments") {
+      fetchMedicamentsEnVente();
+    } else {
+      fetchFournisseurs();
+    }
+  }, [activeView]);
+
+  const filteredMedicaments = medicamentsEnVente.filter((m) =>
     m.nom.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const filteredFournisseurs = fournisseurs.filter((f) =>
-    f.nom.toLowerCase().includes(searchTerm.toLowerCase())
+    (f.nom + " " + f.prenom).toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -73,41 +130,79 @@ export default function PharmacienDashboard() {
           </div>
         </div>
 
-        <h3 className="section-title">
-          {searchType === "medicament" ? "Médicaments Récents" : "Fournisseurs"}
-        </h3>
+        <div className="catalog-section">
+          <div className="view-toggle">
+            <button 
+              className={activeView === "medicaments" ? "active" : ""}
+              onClick={() => setActiveView("medicaments")}
+            >
+              Médicaments en vente
+            </button>
+            <button 
+              className={activeView === "fournisseurs" ? "active" : ""}
+              onClick={() => setActiveView("fournisseurs")}
+            >
+              Fournisseurs
+            </button>
+          </div>
 
-        <table className="medicament-table">
-          <thead>
-            <tr>
-              <th>{searchType === "medicament" ? "Nom" : "Fournisseur"}</th>
-              <th>{searchType === "medicament" ? "Prix" : "Contact"}</th>
-              {searchType === "medicament" && (
-                <>
-                  <th>Qté</th>
-                  <th>Exp</th>
-                </>
-              )}
-            </tr>
-          </thead>
-          <tbody>
-            {searchType === "medicament"
-              ? filteredMedicaments.map((m, idx) => (
-                  <tr key={idx}>
-                    <td>{m.nom}</td>
-                    <td>{m.prix}</td>
-                    <td>{m.quantite}</td>
-                    <td>{m.exp}</td>
-                  </tr>
+          {loading ? (
+            <p>Chargement...</p>
+          ) : activeView === "medicaments" ? (
+            <div className="medicaments-cards">
+              {filteredMedicaments.length > 0 ? (
+                filteredMedicaments.map((med) => (
+                  <div key={med.id} className="medicament-card" onClick={() => navigate(`/medicament/${med.id}`)}>
+                    <h3>{med.nom}</h3>
+                    <p className="fournisseur">
+                      Fournisseur: {med.utilisateur?.nom} {med.utilisateur?.prenom}
+                    </p>
+                    <div className="medicament-details">
+                      <span className="price">{med.prix_hospitalier} DH</span>
+                      <span className="quantity">Stock: {med.quantite}</span>
+                    </div>
+                    <button className="add-to-cart">Ajouter au panier</button>
+                  </div>
                 ))
-              : filteredFournisseurs.map((f, idx) => (
-                  <tr key={idx}>
-                    <td>{f.nom}</td>
-                    <td>{f.contact}</td>
+              ) : (
+                <p className="no-results">Aucun médicament en vente trouvé</p>
+              )}
+            </div>
+          ) : (
+            <div className="fournisseurs-table">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Nom</th>
+                    <th>Prénom</th>
+                    <th>Email</th>
+                    <th>Téléphone</th>
+                    <th>Actions</th>
                   </tr>
-                ))}
-          </tbody>
-        </table>
+                </thead>
+                <tbody>
+                  {filteredFournisseurs.length > 0 ? (
+                    filteredFournisseurs.map((f) => (
+                      <tr key={f.id}>
+                        <td>{f.nom}</td>
+                        <td>{f.prenom}</td>
+                        <td>{f.email}</td>
+                        <td>{f.telephone}</td>
+                        <td>
+                          <button onClick={() => navigate(`/fournisseur/${f.id}`)}>Voir produits</button>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={5}>Aucun fournisseur trouvé</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </main>
     </div>
   );

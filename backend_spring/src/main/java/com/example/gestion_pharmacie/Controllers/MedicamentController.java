@@ -1,5 +1,6 @@
 package com.example.gestion_pharmacie.Controllers;
 
+import com.example.gestion_pharmacie.Repositorys.MedicamentRepository;
 import com.example.gestion_pharmacie.Services.ExcelLoaderService;
 import com.example.gestion_pharmacie.Services.MedicamentScraperService;
 import com.example.gestion_pharmacie.Services.MedicamentService;
@@ -20,13 +21,15 @@ public class MedicamentController {
     private final MedicamentService medicamentService;
     private final ExcelLoaderService excelLoaderService;
     private final MedicamentScraperService medicamentScraperService;
+    private final MedicamentRepository medicamentRepository;
 
 
 
-    public MedicamentController(MedicamentService medicamentService, ExcelLoaderService excelLoaderService, MedicamentScraperService medicamentScraperService) {
+    public MedicamentController(MedicamentService medicamentService, ExcelLoaderService excelLoaderService, MedicamentScraperService medicamentScraperService, MedicamentRepository medicamentRepository) {
         this.medicamentService = medicamentService;
         this.excelLoaderService = excelLoaderService;
         this.medicamentScraperService = medicamentScraperService;
+        this.medicamentRepository = medicamentRepository;
     }
 
     @PreAuthorize("hasAnyRole('FOURNISSEUR', 'PHARMACIEN')")
@@ -59,6 +62,14 @@ public class MedicamentController {
         return ResponseEntity.ok(medicamentService.getUserMedicaments());
     }
 
+    @PreAuthorize("hasAnyRole('FOURNISSEUR', 'PHARMACIEN')")
+    @GetMapping("/{id}")
+    public ResponseEntity<Medicament> getMedicamentById(@PathVariable Long id) {
+        return medicamentRepository.findById(id)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
     @PreAuthorize("hasAnyRole('PHARMACIEN', 'FOURNISSEUR')")
     @GetMapping
     public ResponseEntity<List<Medicament>> getAllMedicaments() {
@@ -75,6 +86,21 @@ public class MedicamentController {
     public ResponseEntity<List<Medicament>> searchMedicaments(@RequestParam String nom) {
         return ResponseEntity.ok(medicamentService.searchMedicaments(nom));
     }
+
+    @PreAuthorize("hasRole('FOURNISSEUR')")
+    @PutMapping("/{id}/toggle-vente")
+    public ResponseEntity<Medicament> toggleEnVente(@PathVariable Long id, @RequestParam boolean enVente) {
+        return ResponseEntity.ok(medicamentService.toggleEnVente(id, enVente));
+    }
+
+    @PreAuthorize("hasAnyRole('PHARMACIEN', 'FOURNISSEUR')")
+    @GetMapping("/en-vente")
+    public ResponseEntity<List<Medicament>> getMedicamentsEnVente() {
+        List<Medicament> medicamentsEnVente = medicamentService.getMedicamentsEnVente();
+        return ResponseEntity.ok(medicamentsEnVente);
+    }
+
+    
 
 
     //WEB SCRAPPING
@@ -98,4 +124,6 @@ public class MedicamentController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
+
 }

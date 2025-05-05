@@ -25,6 +25,9 @@ public class Medicament {
 
     @Column(nullable = false, columnDefinition = "float4 default 0")
     private float prix_public;
+
+    @Column(nullable = false, columnDefinition = "float4 default 0")
+    private float prix_conseille;
     
     private String composition;
     private String classe_therapeutique;
@@ -37,6 +40,9 @@ public class Medicament {
 
     private String natureDuProduit;
     private String tableau;
+    
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean en_vente = false;
 
     @ManyToOne
     @JoinColumn(name = "utilisateur_id")

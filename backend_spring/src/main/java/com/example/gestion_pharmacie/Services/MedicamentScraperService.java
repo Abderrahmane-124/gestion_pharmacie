@@ -174,10 +174,18 @@ public class MedicamentScraperService {
                     case "dosage":
                         medicament.setDosage(value);
                         break;
-                    case "ppv":
+                    case "ppv" :
                         try {
                             float price = parsePrice(value);
                             medicament.setPrix_public(price);
+                        } catch (NumberFormatException e) {
+                            System.err.println("Error parsing PPV: " + value);
+                        }
+                        break;
+                    case "ppc" :
+                        try {
+                            float price = parsePrice(value);
+                            medicament.setPrix_conseille(price);
                         } catch (NumberFormatException e) {
                             System.err.println("Error parsing PPV: " + value);
                         }

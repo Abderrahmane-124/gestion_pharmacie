@@ -4,6 +4,7 @@ import com.example.gestion_pharmacie.Repositorys.FournisseurRepository;
 import com.example.gestion_pharmacie.Repositorys.MedicamentRepository;
 import com.example.gestion_pharmacie.Repositorys.UtilisateurRepository;
 import com.example.gestion_pharmacie.entites.Medicament;
+import com.example.gestion_pharmacie.entites.Role;
 import com.example.gestion_pharmacie.entites.Utilisateur;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -144,4 +145,42 @@ public class MedicamentService {
     public List<Medicament> searchMedicaments(String nom) {
         return medicamentRepository.findByNomContainingIgnoreCase(nom);
     }
+
+    // java
+    public Medicament toggleEnVente(Long id, boolean enVente) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+
+        Utilisateur utilisateur = utilisateurRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
+
+        // Verify user has FOURNISSEUR role by checking the enum value
+        boolean isFournisseur = utilisateur.getRole() == Role.FOURNISSEUR;
+        
+        if (!isFournisseur) {
+            throw new RuntimeException("Seuls les fournisseurs peuvent modifier le statut de vente");
+        }
+
+        return medicamentRepository.findById(id)
+                .map(existingMedicament -> {
+                    // Verify the user owns this medication
+                    if (existingMedicament.getUtilisateur() == null ||
+                            !existingMedicament.getUtilisateur().getId().equals(utilisateur.getId())) {
+                        throw new RuntimeException("Vous n'êtes pas autorisé à modifier ce médicament");
+                    }
+
+                    existingMedicament.setEn_vente(enVente);
+                    return medicamentRepository.save(existingMedicament);
+                })
+                .orElseThrow(() -> new RuntimeException("Medicament not found"));
+    }
+
+    public List<Medicament> getMedicamentsEnVente() {
+        return medicamentRepository.findMedicamentsEnVente();
+    }
+
+//    public Medicament getMedicamentById(Long id) {
+//        return medicamentRepository.findById(id)
+//                .orElseThrow(() -> new RuntimeException("Medicament not found with id: " + id));
+//    }
 }

@@ -5,6 +5,7 @@ import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearSca
 import { Pie, Line } from 'react-chartjs-2';
 import { FaPills, FaClipboardList, FaTruck, FaWarehouse, FaSearch, FaEdit, FaTrash, FaPlus, FaFilter } from 'react-icons/fa';
 import '../Styles/dashboardFournisseur.css';
+import { useNavigate } from 'react-router-dom';
 
 ChartJS.register(
   ArcElement, 
@@ -37,6 +38,18 @@ const DashboardFournisseur = () => {
     quantite: number;
     prix: number;
     dateExpiration: string;
+    natureDuProduit?: string;
+    code_ATC?: string;
+    dosage?: string;
+    presentation?: string;
+    prix_public?: number;
+    prix_hospitalier?: number;
+    prix_conseille?: number;
+    composition?: string;
+    classe_therapeutique?: string;
+    indications?: string;
+    tableau?: string;
+    en_vente?: boolean;
   }
 
   const [currentMedicament, setCurrentMedicament] = useState<Medicament | null>(null);
@@ -71,6 +84,9 @@ const DashboardFournisseur = () => {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Add the navigate hook near the other hooks
+  const navigate = useNavigate();
+
   // Replace the mock data useEffect with API call
   useEffect(() => {
     const fetchMedicaments = async () => {
@@ -87,11 +103,9 @@ const DashboardFournisseur = () => {
         
         const response = await fetch(url, {
           method: 'GET',
-          // Don't use credentials: 'include' which is causing CORS issues
           headers: {
             'Accept': 'application/json',
             'Content-Type': 'application/json',
-            // If you have a token-based auth system:
             ...(token ? { 'Authorization': `Bearer ${token}` } : {})
           }
         });
@@ -105,14 +119,27 @@ const DashboardFournisseur = () => {
         const data = await response.json();
         console.log("Raw data received:", data);
         
-        // Ensure data has the expected structure
+        // Ensure data has the expected structure with ALL properties
         const processedData = Array.isArray(data) ? data.map(item => ({
           id: item.id || Math.random(),
           nom: item.nom || item.name || "Sans nom",
           categorie: item.categorie || item.category || "Non classé",
           quantite: item.quantite || item.quantity || 0,
           prix: item.prix_unitaire || item.prix || item.price || 0,
-          dateExpiration: item.date_expiration ? new Date(item.date_expiration).toISOString().split('T')[0] : item.dateExpiration || "Non définie"
+          dateExpiration: item.date_expiration ? new Date(item.date_expiration).toISOString().split('T')[0] : item.dateExpiration || "Non définie",
+          natureDuProduit: item.natureDuProduit || item.nature || "Non spécifié",
+          // Add all additional properties 
+          code_ATC: item.code_ATC || "",
+          dosage: item.dosage || "",
+          presentation: item.presentation || "",
+          prix_public: item.prix_public || 0,
+          prix_hospitalier: item.prix_hospitalier || 0,
+          prix_conseille: item.prix_conseille || 0,
+          composition: item.composition || "",
+          classe_therapeutique: item.classe_therapeutique || "",
+          indications: item.indications || "",
+          tableau: item.tableau || "",
+          en_vente: item.en_vente || false
         })) : [];
         
         console.log("Processed data:", processedData);
@@ -161,77 +188,13 @@ const DashboardFournisseur = () => {
         } catch (error) {
           console.error("Error fetching commandes:", error);
           // Fallback to mock commandes data
-          const mockOrders: Order[] = [
-            { 
-              id: 1, 
-              pharmacien: { id: 1, nom: "Pharmacie Centrale", prenom: "" }, 
-              dateCommande: "2025-04-22", 
-              statut: "EN_ATTENTE", 
-              fournisseur: { id: 1, nom: "Fournisseur 1", prenom: "" },
-              lignesCommande: [
-                { id: 1, quantite: 50, medicament: { id: 1, nom: "Amoxicilline", prix_unitaire: 85, quantite: 50 } },
-                { id: 2, quantite: 30, medicament: { id: 2, nom: "Doliprane", prix_unitaire: 25, quantite: 30 } }
-              ],
-              montant: 4250
-            },
-            { 
-              id: 2, 
-              pharmacien: { id: 2, nom: "Pharmacie du Soleil", prenom: "" }, 
-              dateCommande: "2025-04-20", 
-              statut: "EN_COURS_DE_LIVRAISON", 
-              fournisseur: { id: 1, nom: "Fournisseur 1", prenom: "" },
-              lignesCommande: [
-                { id: 3, quantite: 20, medicament: { id: 3, nom: "Ventoline", prix_unitaire: 130, quantite: 20 } },
-                { id: 4, quantite: 10, medicament: { id: 4, nom: "Kardégic", prix_unitaire: 75, quantite: 10 } }
-              ],
-              montant: 3600
-            },
-            { 
-              id: 3, 
-              pharmacien: { id: 3, nom: "Pharmacie Moderne", prenom: "" }, 
-              dateCommande: "2025-04-18", 
-              statut: "LIVREE", 
-              fournisseur: { id: 1, nom: "Fournisseur 1", prenom: "" },
-              lignesCommande: [
-                { id: 5, quantite: 25, medicament: { id: 5, nom: "Spasfon", prix_unitaire: 40, quantite: 25 } },
-                { id: 6, quantite: 30, medicament: { id: 6, nom: "Levothyrox", prix_unitaire: 60, quantite: 30 } }
-              ],
-              montant: 2900
-            },
-            { 
-              id: 4, 
-              pharmacien: { id: 4, nom: "Pharmacie des Alpes", prenom: "" }, 
-              dateCommande: "2025-04-15", 
-              statut: "LIVREE",
-              fournisseur: { id: 1, nom: "Fournisseur 1", prenom: "" }, 
-              lignesCommande: [
-                { id: 7, quantite: 60, medicament: { id: 1, nom: "Amoxicilline", prix_unitaire: 85, quantite: 60 } }
-              ],
-              montant: 5100
-            }
-          ];
-          console.log("Using mock commandes data as fallback");
-          setCommandes(mockOrders);
-          setFilteredCommandes(mockOrders);
+          
         }
         
         setLoading(false);
       } catch (error) {
         console.error("Error fetching medications:", error);
-        // Continue using mock data
-        const mockMedicaments = [
-          { id: 1, nom: "Amoxicilline", categorie: "Antibiotique", quantite: 200, prix: 85, dateExpiration: "2025-09-15" },
-          { id: 2, nom: "Doliprane", categorie: "Analgésique", quantite: 350, prix: 25, dateExpiration: "2026-03-20" },
-          { id: 3, nom: "Ventoline", categorie: "Respiratoire", quantite: 120, prix: 130, dateExpiration: "2025-11-10" },
-          { id: 4, nom: "Spasfon", categorie: "Antispasmodique", quantite: 180, prix: 40, dateExpiration: "2026-01-05" },
-          { id: 5, nom: "Kardégic", categorie: "Cardiovasculaire", quantite: 90, prix: 75, dateExpiration: "2025-08-22" },
-          { id: 6, nom: "Levothyrox", categorie: "Hormonal", quantite: 110, prix: 60, dateExpiration: "2025-12-18" },
-        ];
         
-        console.log("Using mock data as fallback");
-        setMedicaments(mockMedicaments);
-        
-        // Keep the rest of your code...
         setLoading(false);
       }
     };
@@ -490,6 +453,9 @@ const DashboardFournisseur = () => {
       }
     };
     
+    // Debug the received data
+    console.log("Detailed medicament data:", data);
+    
     if (data) {
       // Make sure to set the full title name
       setField('med-nom', data.nom);
@@ -498,6 +464,15 @@ const DashboardFournisseur = () => {
       setField('med-presentation', data.presentation);
       setField('med-prix-public', data.prix_public);
       setField('med-prix-hospitalier', data.prix_hospitalier);
+      
+      // Try multiple possible field names for prix_Conseillé
+      const prixConseille = data.ppc || data.prix_Conseillé || data.prix_conseille || 
+                            data.prixConseille || data.prix_conseil || data.PPC || 
+                            (data.prix_public ? data.prix_public : null);
+      
+      console.log("Prix conseillé found:", prixConseille);
+      setField('med-prix-Conseillé', prixConseille);
+      
       setField('med-composition', data.composition);
       setField('med-classe', data.classe_therapeutique);
       setField('med-indications', data.indications);
@@ -541,6 +516,7 @@ const DashboardFournisseur = () => {
         presentation: (document.getElementById('med-presentation') as HTMLInputElement).value,
         prix_hospitalier: parseFloat((document.getElementById('med-prix-hospitalier') as HTMLInputElement).value) || 0,
         prix_public: parseFloat((document.getElementById('med-prix-public') as HTMLInputElement).value) || 0,
+        prix_conseille: parseFloat((document.getElementById('med-prix-Conseillé') as HTMLInputElement).value) || 0,
         composition: (document.getElementById('med-composition') as HTMLInputElement).value,
         classe_therapeutique: (document.getElementById('med-classe') as HTMLInputElement).value,
         quantite: parseInt((document.getElementById('med-quantite') as HTMLInputElement).value) || 0,
@@ -572,25 +548,11 @@ const DashboardFournisseur = () => {
         throw new Error(`Error adding medicament: ${response.status}`);
       }
       
-      const responseText = await response.text();
-      console.log("Raw response:", responseText);
-      
-      // Check if response is not empty before parsing
-      if (responseText) {
-        const savedMedicament = JSON.parse(responseText);
-        // Add the new medicament to the state
-        setMedicaments([...medicaments, savedMedicament]);
-      } else {
-        // If response is empty but status is OK, we'll just refresh the data
-        console.log("Empty response but OK status, fetching updated medicament list");
-        // You may want to fetch updated medicament list here
-      }
-      
       // Close the modal
       setShowAddModal(false);
       
-      // Show success message
-      alert('Médicament ajouté avec succès!');
+      // Refresh the page instead of showing an alert
+      window.location.reload();
     } catch (error) {
       console.error('Error saving medicament:', error);
       alert('Erreur lors de l\'ajout du médicament');
@@ -625,6 +587,143 @@ const DashboardFournisseur = () => {
     totalStock: medicaments.reduce((sum, med) => sum + med.quantite, 0),
     totalCommandes: commandes.length,
     enAttenteCommandes: commandes.filter(cmd => cmd.statut === "EN_ATTENTE").length,
+  };
+
+  // Add a handler function to navigate to medication details
+  const handleMedicamentClick = (medicamentId: number) => {
+    navigate(`/medicament/${medicamentId}`);
+  };
+
+  const handleDeleteMedicament = (medicamentId: number) => {
+    if (window.confirm("Êtes-vous sûr de vouloir supprimer ce médicament ?")) {
+      // Get token from localStorage
+      const token = localStorage.getItem('token');
+      
+      // Show loading state
+      setLoading(true);
+      
+      // Send DELETE request to remove medicament
+      fetch(`http://localhost:8080/medicaments/${medicamentId}`, {
+        method: 'DELETE',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        }
+      })
+      .then(response => {
+        setLoading(false);
+        
+        if (response.ok) {
+          // Update local state by filtering out the deleted medicament
+          setMedicaments(medicaments.filter(med => med.id !== medicamentId));
+          alert('Médicament supprimé avec succès');
+        } else if (response.status === 401 || response.status === 403) {
+          throw new Error('Vous n\'êtes pas autorisé à supprimer ce médicament');
+        } else if (response.status === 404) {
+          throw new Error('Médicament non trouvé');
+        } else {
+          throw new Error('Erreur lors de la suppression');
+        }
+      })
+      .catch(error => {
+        setLoading(false);
+        console.error('Error deleting medicament:', error);
+        alert(error.message || 'Erreur lors de la suppression du médicament');
+      });
+    }
+  };
+
+  const handleUpdateMedicament = async () => {
+    if (!currentMedicament) return;
+    
+    try {
+      // Format date properly
+      const dateInput = document.getElementById('edit-med-date-expiration') as HTMLInputElement;
+      let dateExpiration = null;
+      if (dateInput.value) {
+        dateExpiration = new Date(dateInput.value).toISOString();
+      }
+      
+      // Get values from form inputs
+      const updatedMedicament = {
+        id: currentMedicament.id,
+        nom: (document.getElementById('edit-med-nom') as HTMLInputElement).value,
+        code_ATC: (document.getElementById('edit-med-code-atc') as HTMLInputElement).value,
+        dosage: (document.getElementById('edit-med-dosage') as HTMLInputElement).value,
+        presentation: (document.getElementById('edit-med-presentation') as HTMLInputElement).value,
+        prix_hospitalier: parseFloat((document.getElementById('edit-med-prix-hospitalier') as HTMLInputElement).value) || 0,
+        prix_public: parseFloat((document.getElementById('edit-med-prix-public') as HTMLInputElement).value) || 0,
+        prix_conseille: parseFloat((document.getElementById('edit-med-prix-Conseillé') as HTMLInputElement).value) || 0,
+        composition: (document.getElementById('edit-med-composition') as HTMLInputElement).value,
+        classe_therapeutique: (document.getElementById('edit-med-classe') as HTMLInputElement).value,
+        quantite: parseInt((document.getElementById('edit-med-quantite') as HTMLInputElement).value) || 0,
+        date_expiration: dateExpiration,
+        indications: (document.getElementById('edit-med-indications') as HTMLInputElement).value,
+        natureDuProduit: (document.getElementById('edit-med-nature') as HTMLInputElement).value,
+        tableau: (document.getElementById('edit-med-tableau') as HTMLInputElement).value
+      };
+      
+      console.log("Sending updated medicament data:", updatedMedicament);
+      
+      // Get token from localStorage
+      const token = localStorage.getItem('token');
+      
+      // The API endpoint is already correct: http://localhost:8080/medicaments/{id}
+      const response = await fetch(`http://localhost:8080/medicaments/${currentMedicament.id}`, {
+        method: 'PUT',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify(updatedMedicament)
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Error updating medicament: ${response.status}`);
+      }
+      
+      // Close the modal
+      setShowEditModal(false);
+      
+      // Refresh the page to show updated data
+      window.location.reload();
+    } catch (error) {
+      console.error('Error updating medicament:', error);
+      alert('Erreur lors de la modification du médicament');
+    }
+  };
+
+  const handleToggleVente = async (medicamentId: number, currentEnVente: boolean) => {
+    try {
+      const token = localStorage.getItem('token');
+      setLoading(true);
+      
+      // Include the enVente parameter with the opposite of current value
+      const response = await fetch(`http://localhost:8080/medicaments/${medicamentId}/toggle-vente?enVente=${!currentEnVente}`, {
+        method: 'PUT',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+      
+      setMedicaments(medicaments.map(med => 
+        med.id === medicamentId ? { ...med, en_vente: !med.en_vente } : med
+      ));
+      
+      setLoading(false);
+    } catch (error) {
+      console.error('Error toggling visibility:', error);
+      setLoading(false);
+      alert('Erreur lors du changement de visibilité');
+    }
   };
 
   return (
@@ -730,26 +829,35 @@ const DashboardFournisseur = () => {
                             <Table striped hover>
                               <thead>
                                 <tr>
-                                  <th>Nom</th>
-                                  <th>Quantité</th>
-                                  <th>Prix (DHS)</th>
-                                  <th>Date d'expiration</th>
-                                  <th>Actions</th>
+                                  <th style={{textAlign: 'left'}}>Nom</th>
+                                  <th style={{textAlign: 'left'}}>Quantité</th>
+                                  <th style={{textAlign: 'left'}}>Nature du Produit</th>
+                                  <th style={{textAlign: 'right'}}>Actions</th>
                                 </tr>
                               </thead>
                               <tbody>
                                 {medicaments.map(med => (
-                                  <tr key={med.id} className="table-row-animate">
-                                    <td>{med.nom}</td>
-                                    <td>{med.quantite}</td>
-                                    <td>{med.prix.toFixed(1)} DHS</td>
-                                    <td>{med.dateExpiration}</td>
-                                    <td>
+                                  <tr 
+                                    key={med.id} 
+                                    className="table-row-animate"
+                                  >
+                                    <td style={{textAlign: 'left'}} onClick={() => handleMedicamentClick(med.id)}>{med.nom}</td>
+                                    <td style={{textAlign: 'left'}} onClick={() => handleMedicamentClick(med.id)}>{med.quantite}</td>
+                                    <td style={{textAlign: 'left'}} onClick={() => handleMedicamentClick(med.id)}>{med.natureDuProduit || 'Non spécifié'}</td>
+                                    <td style={{textAlign: 'right'}}>
                                       <Button variant="outline-primary" size="sm" className="me-1" onClick={() => handleEditMedicament(med)}>
-                                        <FaEdit />
+                                        <FaEdit /> Modifier
                                       </Button>
-                                      <Button variant="outline-danger" size="sm">
-                                        <FaTrash />
+                                      <Button 
+                                        variant={med.en_vente ? "outline-success" : "outline-secondary"} 
+                                        size="sm" 
+                                        className="me-1"
+                                        onClick={() => handleToggleVente(med.id, med.en_vente || false)}
+                                      >
+                                        {med.en_vente ? "Disponible" : "Invisible"}
+                                      </Button>
+                                      <Button variant="outline-danger" size="sm" onClick={() => handleDeleteMedicament(med.id)}>
+                                        <FaTrash /> Supprimer
                                       </Button>
                                     </td>
                                   </tr>
@@ -938,6 +1046,10 @@ const DashboardFournisseur = () => {
                   <Form.Control type="number" min="0" step="0.01" placeholder="Prix hospitalier" id="med-prix-hospitalier" />
                 </Form.Group>
                 <Form.Group className="mb-3">
+                  <Form.Label>Prix Conseillé (DHS)</Form.Label>
+                  <Form.Control type="number" min="0" step="0.01" placeholder="Prix Conseillé" id="med-prix-Conseillé" />
+                </Form.Group>
+                <Form.Group className="mb-3">
                   <Form.Label>Composition</Form.Label>
                   <Form.Control type="text" placeholder="Composition" id="med-composition" />
                 </Form.Group>
@@ -987,7 +1099,7 @@ const DashboardFournisseur = () => {
       </Modal>
       
       {/* Modal pour éditer un médicament */}
-      <Modal show={showEditModal} onHide={() => setShowEditModal(false)}>
+      <Modal show={showEditModal} onHide={() => setShowEditModal(false)} size="xl">
         <Modal.Header closeButton>
           <Modal.Title>Modifier le médicament</Modal.Title>
         </Modal.Header>
@@ -996,30 +1108,59 @@ const DashboardFournisseur = () => {
             <Form>
               <Form.Group className="mb-3">
                 <Form.Label>Nom du médicament</Form.Label>
-                <Form.Control type="text" defaultValue={currentMedicament.nom} />
+                <Form.Control type="text" id="edit-med-nom" defaultValue={currentMedicament.nom} />
               </Form.Group>
               <Form.Group className="mb-3">
-                <Form.Label>Catégorie</Form.Label>
-                <Form.Select defaultValue={currentMedicament.categorie}>
-                  <option>Antibiotique</option>
-                  <option>Analgésique</option>
-                  <option>Respiratoire</option>
-                  <option>Antispasmodique</option>
-                  <option>Cardiovasculaire</option>
-                  <option>Hormonal</option>
-                </Form.Select>
+                <Form.Label>Code ATC</Form.Label>
+                <Form.Control type="text" id="edit-med-code-atc" defaultValue={currentMedicament.code_ATC || ''} />
+              </Form.Group>
+              <Form.Group className="mb-3">
+                <Form.Label>Dosage</Form.Label>
+                <Form.Control type="text" id="edit-med-dosage" defaultValue={currentMedicament.dosage || ''} />
+              </Form.Group>
+              <Form.Group className="mb-3">
+                <Form.Label>Présentation</Form.Label>
+                <Form.Control type="text" id="edit-med-presentation" defaultValue={currentMedicament.presentation || ''} />
+              </Form.Group>
+              <Form.Group className="mb-3">
+                <Form.Label>Prix Public (DHS)</Form.Label>
+                <Form.Control type="number" min="0" step="0.01" id="edit-med-prix-public" defaultValue={currentMedicament.prix_public || currentMedicament.prix} />
+              </Form.Group>
+              <Form.Group className="mb-3">
+                <Form.Label>Prix Hospitalier (DHS)</Form.Label>
+                <Form.Control type="number" min="0" step="0.01" id="edit-med-prix-hospitalier" defaultValue={currentMedicament.prix_hospitalier || ''} />
+              </Form.Group>
+              <Form.Group className="mb-3">
+                <Form.Label>Prix Conseillé (DHS)</Form.Label>
+                <Form.Control type="number" min="0" step="0.01" id="edit-med-prix-Conseillé" defaultValue={currentMedicament.prix_conseille || ''} />
+              </Form.Group>
+              <Form.Group className="mb-3">
+                <Form.Label>Composition</Form.Label>
+                <Form.Control type="text" id="edit-med-composition" defaultValue={currentMedicament.composition || ''} />
+              </Form.Group>
+              <Form.Group className="mb-3">
+                <Form.Label>Classe Thérapeutique</Form.Label>
+                <Form.Control type="text" id="edit-med-classe" defaultValue={currentMedicament.classe_therapeutique || currentMedicament.categorie} />
               </Form.Group>
               <Form.Group className="mb-3">
                 <Form.Label>Quantité</Form.Label>
-                <Form.Control type="number" min="1" defaultValue={currentMedicament.quantite} />
-              </Form.Group>
-              <Form.Group className="mb-3">
-                <Form.Label>Prix (DHS)</Form.Label>
-                <Form.Control type="number" min="0" step="0.01" defaultValue={currentMedicament.prix} />
+                <Form.Control type="number" min="1" id="edit-med-quantite" defaultValue={currentMedicament.quantite} />
               </Form.Group>
               <Form.Group className="mb-3">
                 <Form.Label>Date d'expiration</Form.Label>
-                <Form.Control type="date" defaultValue={currentMedicament.dateExpiration} />
+                <Form.Control type="date" id="edit-med-date-expiration" defaultValue={currentMedicament.dateExpiration} />
+              </Form.Group>
+              <Form.Group className="mb-3">
+                <Form.Label>Indications</Form.Label>
+                <Form.Control as="textarea" rows={2} id="edit-med-indications" defaultValue={currentMedicament.indications || ''} />
+              </Form.Group>
+              <Form.Group className="mb-3">
+                <Form.Label>Nature du Produit</Form.Label>
+                <Form.Control type="text" id="edit-med-nature" defaultValue={currentMedicament.natureDuProduit || ''} />
+              </Form.Group>
+              <Form.Group className="mb-3">
+                <Form.Label>Tableau</Form.Label>
+                <Form.Control type="text" id="edit-med-tableau" defaultValue={currentMedicament.tableau || ''} />
               </Form.Group>
             </Form>
           )}
@@ -1028,7 +1169,7 @@ const DashboardFournisseur = () => {
           <Button variant="secondary" onClick={() => setShowEditModal(false)}>
             Annuler
           </Button>
-          <Button variant="primary" onClick={() => setShowEditModal(false)}>
+          <Button variant="primary" onClick={handleUpdateMedicament}>
             Enregistrer
           </Button>
         </Modal.Footer>

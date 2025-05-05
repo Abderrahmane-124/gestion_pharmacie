@@ -19,7 +19,11 @@ import React from "react";
 
 // Protected route component that checks authentication
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
+  
+  if (isLoading) {
+    return <div>Loading...</div>; // Or a better loading component
+  }
   
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;

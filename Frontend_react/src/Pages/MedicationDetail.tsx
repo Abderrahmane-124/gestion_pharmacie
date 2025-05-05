@@ -6,14 +6,25 @@ import "bootstrap/dist/css/bootstrap.min.css";
 interface MedicamentType {
   id: number;
   nom: string;
-  description: string;
-  prix: number;
+  code_ATC?: string;
+  dosage?: string;
+  presentation?: string;
+  prix_hospitalier?: number;
+  prix_public?: number;
+  prix_conseille?: number;
+  composition?: string;
+  classe_therapeutique?: string;
   quantite: number;
-  expiration: string;
-  fournisseur: {
+  date_expiration?: string | null;
+  indications?: string;
+  natureDuProduit?: string;
+  tableau?: string;
+  utilisateur?: {
+    id: number;
     nom: string;
     prenom: string;
-    telephone: string;
+    email?: string;
+    telephone?: string | null;
   };
 }
 
@@ -24,69 +35,39 @@ export default function MedicamentDetail() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulation d'un chargement de données
-    // Dans un cas réel, vous feriez un appel API ici
-    setLoading(true);
-    
-    setTimeout(() => {
-      // Données exemple - à remplacer par vos données réelles
-      const medicamentsData = [
-        {
-          id: 1,
-          nom: "Doliprane",
-          description: "Antidouleur et antipyrétique",
-          prix: 20.5,
-          quantite: 50,
-          expiration: "2025-09-01",
-          fournisseur: { nom: "Ahmed", prenom: "Ben Ali", telephone: "0611223344" },
-        },
-        {
-          id: 2,
-          nom: "Amoxicilline",
-          description: "Antibiotique",
-          prix: 35,
-          quantite: 30,
-          expiration: "2025-07-15",
-          fournisseur: { nom: "Sophie", prenom: "Durand", telephone: "0622334455" },
-        },
-        {
-          id: 3,
-          nom: "Ibuprofène",
-          description: "Anti-inflammatoire non stéroïdien",
-          prix: 15.75,
-          quantite: 40,
-          expiration: "2025-06-30",
-          fournisseur: { nom: "Martin", prenom: "Dubois", telephone: "0633445566" },
-        },
-        {
-          id: 4,
-          nom: "Aspirine",
-          description: "Antidouleur et anti-inflammatoire",
-          prix: 12.99,
-          quantite: 60,
-          expiration: "2025-08-20",
-          fournisseur: { nom: "Durand", prenom: "Marie", telephone: "0644556677" },
-        },
-        {
-          id: 5,
-          nom: "Paracétamol",
-          description: "Analgésique et antipyrétique",
-          prix: 8.5,
-          quantite: 75,
-          expiration: "2025-10-15",
-          fournisseur: { nom: "Petit", prenom: "Jean", telephone: "0655667788" },
+    const fetchMedicamentDetails = async () => {
+      setLoading(true);
+      
+      try {
+        // Get token from localStorage
+        const token = localStorage.getItem('token');
+        
+        // Fetch data from your API using the ID from the URL
+        const response = await fetch(`http://localhost:8080/medicaments/${id}`, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error(`API error: ${response.status}`);
         }
-      ];
-      
-      // Conversion de l'id depuis l'URL (string) vers un nombre
-      const medicamentId = parseInt(id || "0", 10);
-      
-      // Recherche du médicament correspondant à l'id
-      const foundMedicament = medicamentsData.find(m => m.id === medicamentId);
-      
-      setMedicament(foundMedicament || null);
-      setLoading(false);
-    }, 500);
+        
+        const data = await response.json();
+        console.log("Medication details:", data);
+        
+        setMedicament(data);
+      } catch (error) {
+        console.error("Error fetching medication details:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchMedicamentDetails();
   }, [id]);
 
   if (loading) {
@@ -113,9 +94,12 @@ export default function MedicamentDetail() {
     );
   }
 
-  // Calcul du nombre de jours avant expiration
+  // Calcul du nombre de jours avant expiration (handle null date_expiration)
   const today = new Date();
-  const expirationDate = new Date(medicament.expiration);
+  const expirationDate = medicament.date_expiration 
+    ? new Date(medicament.date_expiration) 
+    : new Date(today.getTime() + 365 * 24 * 60 * 60 * 1000); // Default to 1 year if not set
+
   const daysUntilExpiration = Math.floor((expirationDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
   
   // Définir une classe CSS pour l'alerte d'expiration
@@ -146,36 +130,65 @@ export default function MedicamentDetail() {
             <Card.Header className="bg-primary text-white">
               <h3>{medicament.nom}</h3>
             </Card.Header>
-            <Card.Body>
+            <Card.Body className="text-start">
               <Row>
                 <Col md={6}>
                   <h5>Informations générales</h5>
-                  <ListGroup variant="flush" className="mb-4">
+                  <ListGroup variant="flush" className="mb-4 text-start">
                     <ListGroup.Item>
-                      <strong>Description:</strong> {medicament.description}
+                      <strong>Code ATC:</strong> {medicament.code_ATC || "Non spécifié"}
                     </ListGroup.Item>
                     <ListGroup.Item>
-                      <strong>Prix:</strong> {medicament.prix.toFixed(2)} DHS
+                      <strong>Dosage:</strong> {medicament.dosage || "Non spécifié"}
                     </ListGroup.Item>
                     <ListGroup.Item>
-                      <strong>Quantité en stock:</strong> {medicament.quantite}
+                      <strong>Présentation:</strong> {medicament.presentation || "Non spécifiée"}
                     </ListGroup.Item>
                     <ListGroup.Item>
-                      <strong>Date d'expiration:</strong> {new Date(medicament.expiration).toLocaleDateString('fr-FR')}
+                      <strong>Prix public:</strong> {medicament.prix_public ? medicament.prix_public.toFixed(2) : "0.00"} DHS
+                    </ListGroup.Item>
+                    <ListGroup.Item>
+                      <strong>Prix hospitalier:</strong> {medicament.prix_hospitalier ? medicament.prix_hospitalier.toFixed(2) : "0.00"} DHS
+                    </ListGroup.Item>
+                    <ListGroup.Item>
+                      <strong>Prix conseillé:</strong> {medicament.prix_conseille ? medicament.prix_conseille.toFixed(2) : "0.00"} DHS
+                    </ListGroup.Item>
+                    <ListGroup.Item>
+                      <strong>Composition:</strong> {medicament.composition || "Non spécifiée"}
+                    </ListGroup.Item>
+                    <ListGroup.Item>
+                      <strong>Classe thérapeutique:</strong> {medicament.classe_therapeutique || "Non spécifiée"}
+                    </ListGroup.Item>
+                    <ListGroup.Item>
+                      <strong>Quantité en stock:</strong> {medicament.quantite || 0}
+                    </ListGroup.Item>
+                    <ListGroup.Item>
+                      <strong>Date d'expiration:</strong> {medicament.date_expiration 
+                        ? new Date(medicament.date_expiration).toLocaleDateString('fr-FR') 
+                        : "Non spécifiée"}
+                    </ListGroup.Item>
+                    <ListGroup.Item>
+                      <strong>Indications:</strong> {medicament.indications || "Non spécifiées"}
+                    </ListGroup.Item>
+                    <ListGroup.Item>
+                      <strong>Nature du produit:</strong> {medicament.natureDuProduit || "Non spécifiée"}
+                    </ListGroup.Item>
+                    <ListGroup.Item>
+                      <strong>Tableau:</strong> {medicament.tableau || "Non spécifié"}
                     </ListGroup.Item>
                   </ListGroup>
                 </Col>
                 <Col md={6}>
                   <h5>Informations du fournisseur</h5>
-                  <ListGroup variant="flush">
+                  <ListGroup variant="flush" className="text-start">
                     <ListGroup.Item>
-                      <strong>Nom:</strong> {medicament.fournisseur.nom}
+                      <strong>Nom:</strong> {medicament.utilisateur?.nom || "Non spécifié"}
                     </ListGroup.Item>
                     <ListGroup.Item>
-                      <strong>Prénom:</strong> {medicament.fournisseur.prenom}
+                      <strong>Prénom:</strong> {medicament.utilisateur?.prenom || "Non spécifié"}
                     </ListGroup.Item>
                     <ListGroup.Item>
-                      <strong>Téléphone:</strong> {medicament.fournisseur.telephone}
+                      <strong>Téléphone:</strong> {medicament.utilisateur?.telephone || "Non spécifié"}
                     </ListGroup.Item>
                   </ListGroup>
                 </Col>
@@ -210,17 +223,17 @@ export default function MedicamentDetail() {
             <Card.Header className="bg-info text-white">
               <h5>Statistiques</h5>
             </Card.Header>
-            <Card.Body>
-              <p><strong>Valeur totale en stock:</strong> {(medicament.prix * medicament.quantite).toFixed(2)} DHS</p>
-              <p><strong>Jours avant expiration:</strong> {daysUntilExpiration} jours</p>
+            <Card.Body className="text-start">
+              <p className="text-start"><strong>Valeur totale en stock:</strong> {(medicament.prix_public ? medicament.prix_public * medicament.quantite : medicament.prix_conseille ? medicament.prix_conseille * medicament.quantite : 0).toFixed(2)} DHS</p>
+              <p className="text-start"><strong>Jours avant expiration:</strong> {daysUntilExpiration} jours</p>
               
-              <div className={expirationAlertClass}>
+              <div className={`${expirationAlertClass} text-start`}>
                 {expirationMessage}
               </div>
               
-              <div className={medicament.quantite < 10 ? "alert alert-danger" : 
+              <div className={`${medicament.quantite < 10 ? "alert alert-danger" : 
                             medicament.quantite < 20 ? "alert alert-warning" : 
-                            "alert alert-success"}>
+                            "alert alert-success"} text-start`}>
                 {medicament.quantite < 10 ? 
                   "Stock critique! Commandez rapidement." : 
                   medicament.quantite < 20 ?
