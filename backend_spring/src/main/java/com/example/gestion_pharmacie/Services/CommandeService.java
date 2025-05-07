@@ -54,7 +54,7 @@ public class CommandeService {
             // Create the order
             Commande commande = new Commande();
             commande.setDateCommande(LocalDateTime.now());
-            commande.setStatut(StatutCommande.EN_ATTENTE);
+            commande.setStatut(StatutCommande.EN_COURS_DE_CREATION);
             commande.setPharmacien(pharmacien);
             commande.setFournisseur(fournisseur);
 
@@ -103,9 +103,6 @@ public class CommandeService {
         }
     }
 
-
-
-
     public List<CommandeResponseDto> getCommandesForCurrentPharmacien() {
         Pharmacien pharmacien = userService.getCurrentPharmacien();
         List<Commande> commandes = commandeRepository.findByPharmacien(pharmacien);
@@ -122,14 +119,6 @@ public class CommandeService {
                 .collect(Collectors.toList());
     }
 
-//    public List<CommandeResponseDto> getCommandesForCurrentUser() {
-//        Utilisateur utilisateur = userService.getCurrentUser();
-//        List<Commande> commandes = commandeRepository.findByUser(utilisateur);
-//        return commandes.stream()
-//                .map(this::convertToDto)
-//                .collect(Collectors.toList());
-//    }
-
 
     public List<CommandeResponseDto> getAllCommandes() {
         List<Commande> commandes = commandeRepository.findAll();
@@ -138,52 +127,55 @@ public class CommandeService {
                 .collect(Collectors.toList());
     }
 
+    // java
     @Transactional
     public CommandeResponseDto updateCommandeStatus(Long commandeId, StatutCommande newStatus) {
         logger.info("Updating order status for order ID: {} to {}", commandeId, newStatus);
 
-
-        Utilisateur utilisateur = userService.getCurrentFournisseur();
-
-        // Verify user is a supplier
-        if (utilisateur.getRole() != Role.FOURNISSEUR) {
-            throw new RuntimeException("Seuls les fournisseurs peuvent modifier le statut des commandes");
-        }
-
+        // Retrieve the order first
         Commande commande = commandeRepository.findById(commandeId)
                 .orElseThrow(() -> new RuntimeException("Commande non trouvée avec ID: " + commandeId));
 
-        // Verify this supplier is associated with the order
-        if (!commande.getFournisseur().getId().equals(utilisateur.getId())) {
-            throw new RuntimeException("Vous n'êtes pas autorisé à modifier cette commande");
-        }
-
-        // Update status
-        commande.setStatut(newStatus);
-
-        // If status is changed to EN_COURS_DE_LIVRAISON, subtract quantities
-        if (newStatus == StatutCommande.EN_COURS_DE_LIVRAISON) {
-            logger.info("Processing quantity updates for order in delivery");
-            for (LigneCommande ligne : commande.getLignesCommande()) {
-                Medicament medicament = ligne.getMedicament();
-                int newQuantity = medicament.getQuantite() - ligne.getQuantite();
-
-                if (newQuantity < 0) {
-                    throw new RuntimeException("Stock insuffisant pour " + medicament.getNom());
-                }
-
-                medicament.setQuantite(newQuantity);
-                medicamentRepository.save(medicament);
-                logger.info("Updated quantity for medicament {}: {} -> {}",
-                        medicament.getId(), medicament.getQuantite() + ligne.getQuantite(), medicament.getQuantite());
+        if (newStatus == StatutCommande.EN_ATTENTE) {
+            // Only the associated pharmacist can update the order to EN_ATTENTE
+            Pharmacien pharmacien = userService.getCurrentPharmacien();
+            if (!commande.getPharmacien().getId().equals(pharmacien.getId())) {
+                throw new RuntimeException("Only the associated pharmacist can change the status to EN_ATTENTE");
             }
+            commande.setStatut(newStatus);
+            Commande updatedCommande = commandeRepository.save(commande);
+            logger.info("Order status updated to EN_ATTENTE by pharmacist");
+            return convertToDto(updatedCommande);
+        } else {
+            // Existing supplier functionality
+            Utilisateur utilisateur = userService.getCurrentFournisseur();
+            if (utilisateur.getRole() != Role.FOURNISSEUR) {
+                throw new RuntimeException("Seuls les fournisseurs peuvent modifier le statut des commandes");
+            }
+            if (!commande.getFournisseur().getId().equals(utilisateur.getId())) {
+                throw new RuntimeException("Vous n'êtes pas autorisé à modifier cette commande");
+            }
+            commande.setStatut(newStatus);
+            if (newStatus == StatutCommande.EN_COURS_DE_LIVRAISON) {
+                logger.info("Processing quantity updates for order in delivery");
+                for (LigneCommande ligne : commande.getLignesCommande()) {
+                    Medicament medicament = ligne.getMedicament();
+                    int newQuantity = medicament.getQuantite() - ligne.getQuantite();
+                    if (newQuantity < 0) {
+                        throw new RuntimeException("Stock insuffisant pour " + medicament.getNom());
+                    }
+                    // Log previous quantity before updating
+                    logger.info("Updated quantity for medicament {}: {} -> {}",
+                            medicament.getId(), medicament.getQuantite(), newQuantity);
+                    medicament.setQuantite(newQuantity);
+                    medicamentRepository.save(medicament);
+                }
+            }
+            Commande updatedCommande = commandeRepository.save(commande);
+            logger.info("Successfully updated order status to: {}", newStatus);
+            return convertToDto(updatedCommande);
         }
-
-        Commande updatedCommande = commandeRepository.save(commande);
-        logger.info("Successfully updated order status to: {}", newStatus);
-        return convertToDto(updatedCommande);
     }
-
     @Transactional
     public CommandeResponseDto updateCommandeToLivree(Long commandeId) {
         logger.info("Updating order status to LIVREE for order ID: {}", commandeId);
@@ -246,6 +238,7 @@ public class CommandeService {
         logger.info("Successfully updated order status to LIVREE");
         return convertToDto(updatedCommande);
     }
+
 
 
     private CommandeResponseDto convertToDto(Commande commande) {

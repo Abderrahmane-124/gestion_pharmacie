@@ -26,10 +26,13 @@ public class CommandeController {
         return ResponseEntity.ok(commandeService.createCommande(request));
     }
 
+    @GetMapping("/current_pharmacien")
+    public ResponseEntity<List<CommandeResponseDto>> getCommandesForCurrentPharmacien() {
+        return ResponseEntity.ok(commandeService.getCommandesForCurrentPharmacien());
+    }
 
-
-    @GetMapping("/current_user")
-    public ResponseEntity<List<CommandeResponseDto>> getCommandesFoCurrentUser() {
+    @GetMapping("/current_fournisseur")
+    public ResponseEntity<List<CommandeResponseDto>> getCommandesForCurrentFournisseur() {
         return ResponseEntity.ok(commandeService.getCommandesForCurrentFournisseur());
     }
 
@@ -38,7 +41,7 @@ public class CommandeController {
         return ResponseEntity.ok(commandeService.getAllCommandes());
     }
 
-    @PreAuthorize("hasRole('FOURNISSEUR')")
+    @PreAuthorize("hasAnyRole('FOURNISSEUR','PHARMACIEN')")
     @PutMapping("/{id}/status")
     public ResponseEntity<CommandeResponseDto> updateCommandeStatus(
             @PathVariable Long id,

@@ -10,6 +10,8 @@ import VentePharmacien from "./Pages/VentePharmacien";
 import DashboardFournisseur from "./Pages/DashbordFournisseur";
 import Alerte from "./Pages/Alerte";
 import HistoriqueVente from "./Pages/HistoriqueVente";
+import Commandes_fournisseur from "./Pages/Commandes_fournisseur";
+import Commandes_pharmacien from './Pages/Commandes_pharmacien';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import Homepage from "./Pages/HomePage";
@@ -87,6 +89,8 @@ function AppRoutes() {
       <Route path="/dashboard-Fornisseur" element={setProtectedState(<DashboardFournisseur />)} />
       <Route path="/alerte" element={setProtectedState(<Alerte />)} />
       <Route path="/historique-vente" element={setProtectedState(<HistoriqueVente />)} />
+      <Route path="/Commandes_fournisseur" element={setProtectedState(<Commandes_fournisseur />)} />
+      <Route path="/Commandes_pharmacien" element={<Commandes_pharmacien />} />
       
       {/* Fallback route */}
       <Route path="*" element={<Navigate to="/" replace />} />

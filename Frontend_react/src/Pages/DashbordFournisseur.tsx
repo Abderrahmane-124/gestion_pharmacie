@@ -25,7 +25,6 @@ const DashboardFournisseur = () => {
   const [commandes, setCommandes] = useState<Order[]>([]);
   const [filteredCommandes, setFilteredCommandes] = useState<Order[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('Toutes');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [searchMedicament, setSearchMedicament] = useState('');
@@ -148,7 +147,7 @@ const DashboardFournisseur = () => {
         // Fetch commandes data from the API
         try {
           console.log("Attempting to fetch commandes...");
-          const commandesUrl = 'http://localhost:8080/commandes/current_user';
+          const commandesUrl = 'http://localhost:8080/commandes/current_fournisseur';
           console.log("Fetching from:", commandesUrl);
           
           const commandesResponse = await fetch(commandesUrl, {
@@ -169,7 +168,7 @@ const DashboardFournisseur = () => {
           const commandesData = await commandesResponse.json();
           console.log("Raw commandes data received:", commandesData);
           
-          // Process the commandes data
+          // Process all commandes data (not just EN_ATTENTE)
           const processedCommandes = Array.isArray(commandesData) ? commandesData.map(item => ({
             id: item.id,
             dateCommande: item.dateCommande,
@@ -177,18 +176,18 @@ const DashboardFournisseur = () => {
             pharmacien: item.pharmacien,
             fournisseur: item.fournisseur,
             lignesCommande: item.lignesCommande,
-            // Calculate total amount
             montant: item.lignesCommande.reduce((total: number, ligne: any) => 
               total + (ligne.quantite * ligne.medicament.prix_unitaire), 0)
           })) : [];
           
-          console.log("Processed commandes data:", processedCommandes);
+          // Store all commandes in state
           setCommandes(processedCommandes);
-          setFilteredCommandes(processedCommandes);
+          
+          // Filter only EN_ATTENTE orders for the table display
+          const pendingOrders = processedCommandes.filter(item => item.statut === "EN_ATTENTE");
+          setFilteredCommandes(pendingOrders);
         } catch (error) {
           console.error("Error fetching commandes:", error);
-          // Fallback to mock commandes data
-          
         }
         
         setLoading(false);
@@ -201,24 +200,6 @@ const DashboardFournisseur = () => {
     
     fetchMedicaments();
   }, []);
-
-  // Filtrer les commandes
-  useEffect(() => {
-    let results = commandes;
-    
-    if (searchTerm) {
-      results = results.filter(commande => 
-        commande.pharmacien?.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        commande.fournisseur?.nom.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-    
-    if (filterStatus !== 'Toutes') {
-      results = results.filter(commande => commande.statut === filterStatus);
-    }
-    
-    setFilteredCommandes(results);
-  }, [searchTerm, filterStatus, commandes]);
 
   // Process chart data from commandes data
   const processCommandesChartData = () => {
@@ -569,23 +550,43 @@ const DashboardFournisseur = () => {
     setShowOrderDetails(true);
   };
 
-  const handleUpdateOrderStatus = (orderId: number, newStatus: string) => {
-    const updatedCommandes = commandes.map(commande =>
-      commande.id === orderId ? { ...commande, statut: newStatus } : commande
-    );
-    setCommandes(updatedCommandes);
-    setFilteredCommandes(
-      filteredCommandes.map(commande =>
-        commande.id === orderId ? { ...commande, statut: newStatus } : commande
-      )
-    );
+  const handleUpdateOrderStatus = async (orderId: number, newStatus: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      
+      // Call the API to update the order status
+      const response = await fetch(`http://localhost:8080/commandes/${orderId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ status: newStatus })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error updating order status: ${response.status}`);
+      }
+
+      // Update local state by removing the order from the list since it's no longer EN_ATTENTE
+      setCommandes(prevCommandes => prevCommandes.filter(commande => commande.id !== orderId));
+      setFilteredCommandes(prevFiltered => prevFiltered.filter(commande => commande.id !== orderId));
+      
+      // Show success message
+      alert('Statut de la commande mis à jour avec succès');
+    } catch (error) {
+      console.error('Error updating order status:', error);
+      alert('Erreur lors de la mise à jour du statut de la commande');
+    }
   };
 
-  // Calcul des statistiques
+  // Update the stats calculation
   const stats = {
     totalMedicaments: medicaments.length,
     totalStock: medicaments.reduce((sum, med) => sum + med.quantite, 0),
-    totalCommandes: commandes.length,
+    // Filter out EN_COURS_DE_CREATION orders from total count
+    totalCommandes: commandes.filter(cmd => cmd.statut !== "EN_COURS_DE_CREATION").length,
     enAttenteCommandes: commandes.filter(cmd => cmd.statut === "EN_ATTENTE").length,
   };
 
@@ -726,6 +727,11 @@ const DashboardFournisseur = () => {
     }
   };
 
+  // Update the handleCommandesClick function
+  const handleCommandesClick = () => {
+    navigate('/Commandes_fournisseur');
+  };
+
   return (
     <div className="dashboard-fournisseur">
       {loading ? (
@@ -762,7 +768,11 @@ const DashboardFournisseur = () => {
               </Card>
             </Col>
             <Col md={3} sm={6}>
-              <Card className="stat-card animate-card">
+              <Card 
+                className="stat-card animate-card" 
+                onClick={handleCommandesClick}
+                style={{ cursor: 'pointer' }}
+              >
                 <Card.Body>
                   <div className="stat-icon"><FaClipboardList /></div>
                   <h3>{stats.totalCommandes}</h3>
@@ -877,27 +887,13 @@ const DashboardFournisseur = () => {
                       <h2>Commandes des Pharmacies</h2>
                       
                       <Row className="mb-4">
-                        <Col lg={8} md={6}>
+                        <Col lg={12}>
                           <InputGroup>
                             <InputGroup.Text><FaSearch /></InputGroup.Text>
                             <Form.Control 
                               placeholder="Rechercher par pharmacien..." 
                               onChange={(e) => setSearchTerm(e.target.value)}
                             />
-                          </InputGroup>
-                        </Col>
-                        <Col lg={4} md={6}>
-                          <InputGroup>
-                            <InputGroup.Text><FaFilter /></InputGroup.Text>
-                            <Form.Select 
-                              value={filterStatus}
-                              onChange={(e) => setFilterStatus(e.target.value)}
-                            >
-                              <option value="Toutes">Toutes les commandes</option>
-                              <option value="EN_ATTENTE">En Attente</option>
-                              <option value="EN_COURS_DE_LIVRAISON">En Cours De Livraison</option>
-                              <option value="LIVREE">Livré</option>
-                            </Form.Select>
                           </InputGroup>
                         </Col>
                       </Row>

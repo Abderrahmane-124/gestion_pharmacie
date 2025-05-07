@@ -1,0 +1,216 @@
+.commandes-container {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.commandes-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.commandes-header h1 {
+  color: #2c3e50;
+  margin: 0;
+}
+
+.back-btn {
+  padding: 0.5rem 1rem;
+  background-color: #3498db;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.back-btn:hover {
+  background-color: #2980b9;
+}
+
+.commandes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.commande-card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 1.5rem;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.commande-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.commande-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #eee;
+}
+
+.commande-header h3 {
+  margin: 0;
+  color: #2c3e50;
+}
+
+.status-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.status-waiting {
+  background-color: #f1c40f;
+  color: #fff;
+}
+
+.status-delivering {
+  background-color: #3498db;
+  color: #fff;
+}
+
+.status-delivered {
+  background-color: #2ecc71;
+  color: #fff;
+}
+
+.commande-info {
+  margin-bottom: 1rem;
+}
+
+.commande-info p {
+  margin: 0.5rem 0;
+  color: #7f8c8d;
+}
+
+.commande-items {
+  margin-bottom: 1rem;
+}
+
+.commande-items h4 {
+  color: #2c3e50;
+  margin-bottom: 0.5rem;
+}
+
+.commande-items ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.commande-items li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #eee;
+}
+
+.item-name {
+  flex: 1;
+  color: #2c3e50;
+}
+
+.item-quantity {
+  color: #7f8c8d;
+  margin: 0 1rem;
+}
+
+.item-price {
+  color: #2c3e50;
+  font-weight: 500;
+}
+
+.commande-total {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 2px solid #eee;
+  text-align: right;
+}
+
+.commande-total p {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  font-size: 1.2rem;
+  color: #7f8c8d;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .commandes-container {
+    padding: 1rem;
+  }
+
+  .commandes-header {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+  }
+
+  .commandes-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .commande-card {
+    padding: 1rem;
+  }
+}
+
+/* Animation for status changes */
+@keyframes statusChange {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.status-badge {
+  animation: statusChange 0.3s ease-in-out;
+}
+
+.send-btn {
+  width: 100%;
+  padding: 0.75rem;
+  margin-top: 1rem;
+  background-color: #2ecc71;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.3s;
+}
+
+.send-btn:hover {
+  background-color: #27ae60;
+}
+
+.send-btn:disabled {
+  background-color: #95a5a6;
+  cursor: not-allowed;
+} 
