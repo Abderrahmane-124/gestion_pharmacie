@@ -7,6 +7,11 @@ interface Commande {
   id: number;
   dateCommande: string;
   statut: string;
+  pharmacien: {
+    id: number;
+    nom: string;
+    prenom: string;
+  };
   fournisseur: {
     id: number;
     nom: string;
@@ -51,17 +56,9 @@ export default function Commandes() {
   const handleUpdateStatus = async (commandeId: number, newStatus: string) => {
     try {
       const token = localStorage.getItem('token');
-      const endpoint = newStatus === "LIVREE" 
-        ? `http://localhost:8080/commandes/${commandeId}/livree`
-        : `http://localhost:8080/commandes/${commandeId}/status`;
-      
-      const payload = newStatus === "LIVREE" 
-        ? {} 
-        : { status: newStatus };
-
       await axios.put(
-        endpoint,
-        payload,
+        `http://localhost:8080/commandes/${commandeId}/status`,
+        { status: newStatus },
         {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -72,6 +69,25 @@ export default function Commandes() {
       fetchCommandes();
     } catch (error) {
       console.error("Error updating command status:", error);
+    }
+  };
+
+  const handleMarkAsDelivered = async (commandeId: number) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.put(
+        `http://localhost:8080/commandes/${commandeId}/livree`,
+        {},
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+      // Refresh the commands list after updating
+      await fetchCommandes();
+    } catch (error) {
+      console.error("Error marking command as delivered:", error);
     }
   };
 
@@ -140,6 +156,7 @@ export default function Commandes() {
             
             <div className="commande-info">
               <p className="date">Date: {formatDate(commande.dateCommande)}</p>
+              <p className="pharmacien">Pharmacien: {commande.pharmacien.prenom} {commande.pharmacien.nom}</p>
             </div>
 
             <div className="commande-items">
@@ -175,7 +192,7 @@ export default function Commandes() {
             {commande.statut === "EN_COURS_DE_LIVRAISON" && (
               <button 
                 className="livrer-btn"
-                onClick={() => handleUpdateStatus(commande.id, "LIVREE")}
+                onClick={() => handleMarkAsDelivered(commande.id)}
               >
                 Marquer comme Livré
               </button>

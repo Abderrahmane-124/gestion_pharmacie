@@ -169,4 +169,10 @@
 
 .passer-commande-btn:hover {
   background-color: #45a049;
+}
+
+.pharmacien {
+  color: #666;
+  font-size: 0.9em;
+  margin-top: 5px;
 } 

@@ -17,4 +17,6 @@ public interface MedicamentRepository extends JpaRepository<Medicament, Long> {
     
     @Query("SELECT m FROM Medicament m WHERE m.en_vente = true")
     List<Medicament> findMedicamentsEnVente();
+
+    List<Medicament> findByUtilisateur(Utilisateur utilisateur);
 }

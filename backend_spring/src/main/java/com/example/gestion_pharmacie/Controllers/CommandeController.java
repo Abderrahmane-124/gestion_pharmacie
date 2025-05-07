@@ -51,7 +51,7 @@ public class CommandeController {
         return ResponseEntity.ok(commandeService.updateCommandeStatus(id, newStatus));
     }
 
-    @PreAuthorize("hasRole('PHARMACIEN')")
+    @PreAuthorize("hasAnyRole('PHARMACIEN', 'FOURNISSEUR')")
     @PutMapping("/{id}/livree")
     public ResponseEntity<CommandeResponseDto> markCommandeAsLivree(@PathVariable Long id) {
         return ResponseEntity.ok(commandeService.updateCommandeToLivree(id));

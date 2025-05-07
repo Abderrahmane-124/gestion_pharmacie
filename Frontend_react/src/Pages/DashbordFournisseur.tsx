@@ -86,6 +86,9 @@ const DashboardFournisseur = () => {
   // Add the navigate hook near the other hooks
   const navigate = useNavigate();
 
+  // Add a new state to control the active tab
+  const [activeTab, setActiveTab] = useState('stock');
+
   // Replace the mock data useEffect with API call
   useEffect(() => {
     const fetchMedicaments = async () => {
@@ -770,7 +773,9 @@ const DashboardFournisseur = () => {
             <Col md={3} sm={6}>
               <Card 
                 className="stat-card animate-card" 
-                onClick={handleCommandesClick}
+                onClick={() => {
+                  setActiveTab('commandes');
+                }}
                 style={{ cursor: 'pointer' }}
               >
                 <Card.Body>
@@ -781,7 +786,13 @@ const DashboardFournisseur = () => {
               </Card>
             </Col>
             <Col md={3} sm={6}>
-              <Card className="stat-card animate-card">
+              <Card 
+                className="stat-card animate-card" 
+                onClick={() => {
+                  setActiveTab('commandes');
+                }}
+                style={{ cursor: 'pointer' }}
+              >
                 <Card.Body>
                   <div className="stat-icon"><FaTruck /></div>
                   <h3>{stats.enAttenteCommandes}</h3>
@@ -793,7 +804,12 @@ const DashboardFournisseur = () => {
           
           <Row className="main-content">
             <Col lg={12}>
-              <Tabs defaultActiveKey="stock" id="dashboard-tabs" className="mb-4">
+              <Tabs 
+                activeKey={activeTab} 
+                onSelect={(k) => setActiveTab(k || 'stock')} 
+                id="dashboard-tabs" 
+                className="mb-4"
+              >
                 <Tab eventKey="stock" title={<span><FaWarehouse /> Stock de Médicaments</span>}>
                   <Card className="content-card">
                     <Card.Body>

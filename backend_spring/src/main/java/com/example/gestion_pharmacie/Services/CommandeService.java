@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -127,7 +128,6 @@ public class CommandeService {
                 .collect(Collectors.toList());
     }
 
-    // java
     @Transactional
     public CommandeResponseDto updateCommandeStatus(Long commandeId, StatutCommande newStatus) {
         logger.info("Updating order status for order ID: {} to {}", commandeId, newStatus);
@@ -180,15 +180,23 @@ public class CommandeService {
     public CommandeResponseDto updateCommandeToLivree(Long commandeId) {
         logger.info("Updating order status to LIVREE for order ID: {}", commandeId);
 
-        // Get current authenticated pharmacist
-        Pharmacien pharmacien = userService.getCurrentPharmacien();
-
         Commande commande = commandeRepository.findById(commandeId)
                 .orElseThrow(() -> new RuntimeException("Commande non trouvée avec ID: " + commandeId));
 
-        // Verify this pharmacist is associated with the order
-        if (!commande.getPharmacien().getId().equals(pharmacien.getId())) {
-            throw new RuntimeException("Vous n'êtes pas autorisé à modifier cette commande");
+        // Get current user
+        Utilisateur currentUser = userService.getCurrentUser();
+
+        // Check if user is either the associated pharmacist or supplier
+        if (currentUser.getRole() == Role.PHARMACIEN) {
+            if (!commande.getPharmacien().getId().equals(currentUser.getId())) {
+                throw new RuntimeException("Vous n'êtes pas autorisé à modifier cette commande");
+            }
+        } else if (currentUser.getRole() == Role.FOURNISSEUR) {
+            if (!commande.getFournisseur().getId().equals(currentUser.getId())) {
+                throw new RuntimeException("Vous n'êtes pas autorisé à modifier cette commande");
+            }
+        } else {
+            throw new RuntimeException("Rôle non autorisé");
         }
 
         // Verify the current status is EN_COURS_DE_LIVRAISON
@@ -196,25 +204,26 @@ public class CommandeService {
             throw new RuntimeException("Impossible de marquer comme livrée: la commande n'est pas en cours de livraison");
         }
 
-        // Update status to LIVREE
-        commande.setStatut(StatutCommande.LIVREE);
+        // Get the pharmacist's current medications
+        List<Medicament> pharmacienMedicaments = medicamentRepository.findByUtilisateur(commande.getPharmacien());
 
-        // Process medications - add to pharmacist inventory
+        // Process each medication in the order
         for (LigneCommande ligne : commande.getLignesCommande()) {
             Medicament commandeMed = ligne.getMedicament();
             int quantite = ligne.getQuantite();
 
             // Check if the pharmacist already has this medication
-            List<Medicament> existingMeds = medicamentRepository.findByNomAndUtilisateur(
-                    commandeMed.getNom(), pharmacien);
+            Optional<Medicament> existingMed = pharmacienMedicaments.stream()
+                    .filter(m -> m.getNom().equals(commandeMed.getNom()))
+                    .findFirst();
 
-            if (!existingMeds.isEmpty()) {
+            if (existingMed.isPresent()) {
                 // Update existing medication quantity
-                Medicament existingMed = existingMeds.get(0);
-                existingMed.setQuantite(existingMed.getQuantite() + quantite);
-                medicamentRepository.save(existingMed);
-                logger.info("Updated quantity for existing medication {} for pharmacist: {} -> {}",
-                        existingMed.getNom(), existingMed.getQuantite() - quantite, existingMed.getQuantite());
+                Medicament med = existingMed.get();
+                med.setQuantite(med.getQuantite() + quantite);
+                medicamentRepository.save(med);
+                logger.info("Updated quantity for existing medication {}: {} -> {}",
+                        med.getNom(), med.getQuantite() - quantite, med.getQuantite());
             } else {
                 // Create new medication for pharmacist
                 Medicament newMed = new Medicament();
@@ -228,13 +237,16 @@ public class CommandeService {
                 newMed.setComposition(commandeMed.getComposition());
                 newMed.setClasse_therapeutique(commandeMed.getClasse_therapeutique());
                 newMed.setQuantite(quantite);
-                newMed.setUtilisateur(pharmacien);
+                newMed.setUtilisateur(commande.getPharmacien());
                 medicamentRepository.save(newMed);
                 logger.info("Created new medication {} for pharmacist with quantity {}", newMed.getNom(), quantite);
             }
         }
 
+        // Update status to LIVREE
+        commande.setStatut(StatutCommande.LIVREE);
         Commande updatedCommande = commandeRepository.save(commande);
+        
         logger.info("Successfully updated order status to LIVREE");
         return convertToDto(updatedCommande);
     }
