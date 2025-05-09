@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import "../Styles/PharmacienDashboard.css";
 import { FaSearch } from "react-icons/fa";
 import axios from "axios";
+import { IoMdWarning } from "react-icons/io";
 
 interface Medicament {
   id: number;
@@ -37,6 +38,13 @@ interface Commande {
   };
 }
 
+interface Alerte {
+  id: number;
+  message: string;
+  minimumQuantite: number;
+  medicaments: Medicament[];
+}
+
 export default function PharmacienDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
   const [searchType, setSearchType] = useState<"medicament" | "fournisseur">("medicament");
@@ -48,6 +56,11 @@ export default function PharmacienDashboard() {
   const [commandes, setCommandes] = useState<Commande[]>([]);
   const [showCommandes, setShowCommandes] = useState(false);
   const [selectedMedicament, setSelectedMedicament] = useState<Medicament | null>(null);
+  const [alerteNotifications, setAlerteNotifications] = useState<{
+    medicament: Medicament;
+    alerte: Alerte;
+  }[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
   const navigate = useNavigate();
 
   const fetchMedicamentsEnVente = async () => {
@@ -157,6 +170,40 @@ export default function PharmacienDashboard() {
     }
   };
 
+  const checkAlertes = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      
+      // First fetch all alertes
+      const alertesResponse = await axios.get("http://localhost:8080/api/alertes", {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      const alertes: Alerte[] = alertesResponse.data;
+      
+      // Then check each alerte against medicaments in stock
+      const notifications = [];
+      
+      for (const alerte of alertes) {
+        for (const med of alerte.medicaments) {
+          // Check if medicament quantity is at or below the minimum threshold
+          if (med.quantite <= alerte.minimumQuantite) {
+            notifications.push({
+              medicament: med,
+              alerte: alerte
+            });
+          }
+        }
+      }
+      
+      setAlerteNotifications(notifications);
+    } catch (error) {
+      console.error("Error checking alertes:", error);
+    }
+  };
+
   useEffect(() => {
     if (activeView === "medicaments") {
       fetchMedicamentsEnVente();
@@ -164,6 +211,15 @@ export default function PharmacienDashboard() {
       fetchFournisseurs();
     }
   }, [activeView]);
+
+  useEffect(() => {
+    checkAlertes();
+    
+    // Set up a timer to check alertes periodically (every 5 minutes)
+    const interval = setInterval(checkAlertes, 300000);
+    
+    return () => clearInterval(interval);
+  }, []);
 
   const handleQuantityChange = (medicamentId: number, value: number) => {
     setQuantities(prev => ({
@@ -325,6 +381,40 @@ export default function PharmacienDashboard() {
 
   return (
     <div className="dashboard-container">
+      {alerteNotifications.length > 0 && (
+        <div className="alerte-notification-indicator" onClick={() => setShowNotifications(!showNotifications)}>
+          <IoMdWarning />
+          <span className="alerte-count">{alerteNotifications.length}</span>
+          
+          {showNotifications && (
+            <div className="alerte-dropdown">
+              <h4>Alertes de stock</h4>
+              {alerteNotifications.map((notification, index) => (
+                <div key={index} className="alerte-notification-item">
+                  <div className="notification-header">
+                    <strong>{notification.alerte.message}</strong>
+                  </div>
+                  <div className="notification-medicament">
+                    <p className="med-name">
+                      <strong>{notification.medicament.nom}</strong>
+                    </p>
+                    <p className="med-quantity">
+                      Stock actuel: <span className="quantity-value">{notification.medicament.quantite}</span>
+                    </p>
+                    <p className="alerte-min">
+                      Seuil d'alerte: <span className="threshold-value">{notification.alerte.minimumQuantite}</span>
+                    </p>
+                  </div>
+                  <button className="view-med-btn" onClick={() => navigate(`/medicament/${notification.medicament.id}`)}>
+                    Voir détails
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+      
       <aside className="sidebar">
         <div className="profile"></div>
         <nav className="menu">
@@ -332,7 +422,8 @@ export default function PharmacienDashboard() {
           <button onClick={() => navigate("/mes-medicaments")}>💊 Mes Médicaments</button>
           <button onClick={() => navigate("/Panier")}>🧺 Mon Panier</button>
           <button onClick={() => navigate("/Commandes_pharmacien")}>📦 Commandes</button>
-          <button>🧾 Historique</button>
+          <button onClick={() => navigate("/alerte")}>🚨 Alertes</button>
+          <button onClick={() => navigate("/historique-pharmacien")}>🧾 Historique</button>
         </nav>
       </aside>
 

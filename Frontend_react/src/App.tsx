@@ -1,6 +1,6 @@
 import SignUp from "./Pages/SignUp";
 import PharmacienDashboard from "./Pages/PharmacienDashboard";
-import MesMedicaments from "./Pages/Medicament";
+import MesMedicaments from "./Pages/MesMedicaments";
 import VisualiserVente from "./Pages/VisualiserVente";
 import MedicamentDetail from "./Pages/MedicationDetail";
 import Statistique from "./Pages/Statistique";
@@ -9,7 +9,6 @@ import ConfirmationCommande from "./Pages/ConfirmationCommande";
 import VentePharmacien from "./Pages/VentePharmacien";
 import DashboardFournisseur from "./Pages/DashbordFournisseur";
 import Alerte from "./Pages/Alerte";
-import HistoriqueVente from "./Pages/HistoriqueVente";
 import Commandes_fournisseur from "./Pages/Commandes_fournisseur";
 import Commandes_pharmacien from './Pages/Commandes_pharmacien';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
@@ -18,6 +17,7 @@ import Homepage from "./Pages/HomePage";
 import LoginPage from "./Pages/Loginpage";
 import { JSX, useEffect } from "react";
 import React from "react";
+import HistoriquePharmacien from './Pages/HistoriquePharmacien';
 
 // Protected route component that checks authentication
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
@@ -88,7 +88,7 @@ function AppRoutes() {
       <Route path="/vente-pharmacien" element={setProtectedState(<VentePharmacien />)} />
       <Route path="/dashboard-Fornisseur" element={setProtectedState(<DashboardFournisseur />)} />
       <Route path="/alerte" element={setProtectedState(<Alerte />)} />
-      <Route path="/historique-vente" element={setProtectedState(<HistoriqueVente />)} />
+      <Route path="/historique-pharmacien" element={setProtectedState(<HistoriquePharmacien />)} />
       <Route path="/Commandes_fournisseur" element={setProtectedState(<Commandes_fournisseur />)} />
       <Route path="/Commandes_pharmacien" element={<Commandes_pharmacien />} />
       

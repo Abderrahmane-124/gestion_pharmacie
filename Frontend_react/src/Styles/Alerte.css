@@ -49,3 +49,39 @@ body {
     100% { transform: translateY(-120vh) scale(1.5); opacity: 0; }
   }
   
+  .delete-confirm {
+    background-color: #fff8f8;
+    border: 1px solid #ffe8e8;
+    border-radius: 4px;
+    padding: 8px;
+    animation: fadeIn 0.3s;
+  }
+  
+  .delete-confirm p {
+    font-size: 0.9rem;
+    margin-bottom: 8px;
+  }
+  
+  .delete-confirm .btn-group {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  
+  .btn-group .btn {
+    flex: 1;
+  }
+  
+  .btn-group .btn:first-child {
+    margin-right: 4px;
+  }
+  

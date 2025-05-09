@@ -99,6 +99,17 @@ public class PanierService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional
+    public PanierResponseDto closeCurrentPanier() {
+        Pharmacien pharmacien = utilisateurService.getCurrentPharmacien();
+        List<Panier> paniers = panierRepository.findByPharmacien(pharmacien);
+        Panier openPanier = paniers.stream().filter(p -> !p.isVendu()).findFirst()
+                .orElseThrow(() -> new RuntimeException("Aucun panier ouvert à clôturer."));
+        openPanier.setVendu(true);
+        Panier saved = panierRepository.save(openPanier);
+        return convertToDto(saved);
+    }
+
     private PanierResponseDto convertToDto(Panier panier) {
         PanierResponseDto dto = new PanierResponseDto();
         dto.setId(panier.getId());

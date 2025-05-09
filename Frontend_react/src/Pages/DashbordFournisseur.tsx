@@ -773,9 +773,7 @@ const DashboardFournisseur = () => {
             <Col md={3} sm={6}>
               <Card 
                 className="stat-card animate-card" 
-                onClick={() => {
-                  setActiveTab('commandes');
-                }}
+                onClick={handleCommandesClick}
                 style={{ cursor: 'pointer' }}
               >
                 <Card.Body>
@@ -999,6 +997,10 @@ const DashboardFournisseur = () => {
                   onChange={(e) => setSearchMedicament(e.target.value)}
                 />
               </Form.Group>
+              
+              <p className="text-muted small mb-3">
+                <em>Tous les médicaments recherchés proviennent du site <a href="https://medicament.ma/listing-des-medicaments/" target="_blank" rel="noopener noreferrer">medicament.ma</a>. Si par malheur la barre de recherche ne fonctionne plus correctement, vous pouvez consulter le site directement.</em>
+              </p>
               
               {isSearching && (
                 <div className="text-center my-2">
