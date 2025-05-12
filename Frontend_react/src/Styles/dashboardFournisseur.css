@@ -16,7 +16,19 @@
   font-family: 'Poppins', sans-serif;
   background-color: #f5f5f5;
   min-height: 100vh;
+  width: 100vw;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
 }
+
+/* Ajuster le Container de Bootstrap pour qu'il prenne toute la largeur */
+.dashboard-fournisseur .container-fluid {
+  padding-left: 0;
+  padding-right: 0;
+  max-width: 100%;
+}
+
 
 /* Loader */
 .loading-spinner {
@@ -201,4 +213,34 @@
   color: var(--dark);
   border-top: none;
   background-color: #f5f5f5;
-  padding: 1rem;    }
+  padding: 1rem;
+}
+
+/* Ajouter cette classe à la fin du fichier */
+.btn-custom-gray {
+  color: #4a4a4a !important;
+  border-color: #4a4a4a !important;
+  background-color: transparent !important;
+}
+
+.btn-custom-gray:hover {
+  color: #fff !important;
+  background-color: #4a4a4a !important;
+  border-color: #4a4a4a !important;
+}
+
+/* Ajout du style pour le bouton "Invisibles" */
+.btn-invisible {
+  color: #4a4a4a !important;
+  border-color: #4a4a4a !important;
+}
+
+.btn-invisible.active {
+  background-color: #4a4a4a !important;
+  color: white !important;
+}
+
+.btn-invisible:hover {
+  background-color: #c2a1d9 !important;
+  color: white !important;
+}

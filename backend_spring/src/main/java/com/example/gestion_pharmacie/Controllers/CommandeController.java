@@ -41,6 +41,11 @@ public class CommandeController {
         return ResponseEntity.ok(commandeService.getAllCommandes());
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<CommandeResponseDto> getCommandeById(@PathVariable Long id) {
+        return ResponseEntity.ok(commandeService.getCommandeById(id));
+    }
+
     @PreAuthorize("hasAnyRole('FOURNISSEUR','PHARMACIEN')")
     @PutMapping("/{id}/status")
     public ResponseEntity<CommandeResponseDto> updateCommandeStatus(

@@ -225,4 +225,124 @@
     margin: 0 0 10px 0 !important;
     width: 100%;
   }
+}
+
+.commande-details-container {
+  min-height: 100vh;
+  background-color: #f8f9fa;
+}
+
+.commande-header {
+  background-color: white;
+  padding: 1rem 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+}
+
+.commande-title {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #2c3e50;
+}
+
+.back-button {
+  color: #6c757d;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  padding: 0;
+}
+
+.back-button:hover {
+  color: #2c3e50;
+}
+
+.main-container {
+  padding: 0 2rem;
+}
+
+.info-card,
+.products-card,
+.actions-card {
+  border: none;
+  border-radius: 10px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  margin-bottom: 2rem;
+}
+
+.info-section {
+  padding: 1rem;
+}
+
+.info-section h4 {
+  color: #6c757d;
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+}
+
+.info-value {
+  color: #2c3e50;
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+.status-badge {
+  font-size: 0.9rem;
+  padding: 0.5rem 1rem;
+  display: inline-flex;
+  align-items: center;
+}
+
+.products-table {
+  margin: 0;
+}
+
+.products-table th {
+  background-color: #f8f9fa;
+  border-bottom: 2px solid #dee2e6;
+  color: #6c757d;
+  font-weight: 600;
+}
+
+.products-table td {
+  vertical-align: middle;
+}
+
+.products-table tfoot {
+  border-top: 2px solid #dee2e6;
+}
+
+.card-title {
+  color: #2c3e50;
+  font-size: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.actions-card .btn {
+  padding: 0.75rem 1.5rem;
+  font-weight: 500;
+}
+
+.alert {
+  margin-bottom: 1rem;
+}
+
+@media (max-width: 768px) {
+  .main-container {
+    padding: 0 1rem;
+  }
+
+  .info-section {
+    padding: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .actions-card .btn {
+    width: 100%;
+    margin-bottom: 0.5rem;
+  }
+
+  .products-table {
+    font-size: 0.9rem;
+  }
 } 

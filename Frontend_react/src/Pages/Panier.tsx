@@ -101,7 +101,7 @@ const Panier: React.FC = () => {
   };
 
   const calculateTotal = () => {
-    return lignesPanier.reduce((total, l) => total + (l.medicament.prix_hospitalier * l.quantite), 0);
+    return lignesPanier.reduce((total, l) => total + ((l.medicament.prix_public || l.medicament.prix_hospitalier) * l.quantite), 0);
   };
 
   const handleCheckout = async () => {
@@ -133,11 +133,19 @@ const Panier: React.FC = () => {
         <Container fluid>
           <div className="d-flex justify-content-between align-items-center">
             <Button 
-              variant="link" 
-              className="back-button"
-              onClick={() => navigate(-1)}
+              variant="success" 
+              className="home-button"
+              onClick={() => navigate('/dashboard-pharmacien')}
+              size="sm"
             >
-              <ArrowLeft className="me-2" /> Retour
+              <ArrowLeft className="me-2" /> Page d'accueil
+            </Button>
+            <Button 
+              variant="outline-primary" 
+              className="browse-meds-button"
+              onClick={() => navigate('/mes-medicaments')}
+            >
+              Parcourir les médicaments
             </Button>
             <div className="cart-icon-container">
               <CartFill size={24} />
@@ -173,22 +181,24 @@ const Panier: React.FC = () => {
                 </div>
                 <h3>Votre panier est vide</h3>
                 <p>Ajoutez des médicaments pour commencer une commande</p>
-                <Button 
-                  variant="primary"
-                  onClick={() => navigate('/mes-medicaments')}
-                  size="sm"
-                  style={{ 
-                    transition: 'all 0.3s ease',
-                    boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
-                    borderRadius: '8px',
-                    borderWidth: '1px',
-                    padding: '8px 16px'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
-                  onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                >
-                  Parcourir les médicaments
-                </Button>
+                <div className="d-flex justify-content-center w-100">
+                  <Button 
+                    variant="primary"
+                    onClick={() => navigate('/mes-medicaments')}
+                    size="sm"
+                    style={{ 
+                      transition: 'all 0.3s ease',
+                      boxShadow: '0 2px 5px rgba(0,0,0,0.1)',
+                      borderRadius: '8px',
+                      borderWidth: '1px',
+                      padding: '8px 16px'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+                    onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                  >
+                    Parcourir les médicaments
+                  </Button>
+                </div>
               </div>
             ) : (
               <Row>
@@ -227,7 +237,7 @@ const Panier: React.FC = () => {
                               </InputGroup>
                             </div>
                             <div className="item-price">
-                              {item.medicament.prix_hospitalier.toFixed(2)} DHS
+                              {(item.medicament.prix_public || item.medicament.prix_hospitalier).toFixed(2)} DHS
                             </div>
                             <Button 
                               variant="danger" 
@@ -263,7 +273,7 @@ const Panier: React.FC = () => {
                               {item.medicament.nom} ({item.quantite})
                             </div>
                             <div className="summary-item-price">
-                              {(item.medicament.prix_hospitalier * item.quantite).toFixed(2)} DHS
+                              {((item.medicament.prix_public || item.medicament.prix_hospitalier) * item.quantite).toFixed(2)} DHS
                             </div>
                           </div>
                         ))}

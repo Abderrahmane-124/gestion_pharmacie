@@ -63,6 +63,14 @@ export default function PharmacienDashboard() {
   const [showNotifications, setShowNotifications] = useState(false);
   const navigate = useNavigate();
 
+  const normalizeText = (text: string): string => {
+    return text
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // Enlève les accents
+      .replace(/[-\s]/g, ''); // Enlève les tirets et espaces
+  };
+
   const fetchMedicamentsEnVente = async () => {
     setLoading(true);
     try {
@@ -75,12 +83,8 @@ export default function PharmacienDashboard() {
       });
       setMedicamentsEnVente(response.data);
       
-      // Initialize quantities
-      const initialQuantities: {[key: number]: number} = {};
-      response.data.forEach((med: Medicament) => {
-        initialQuantities[med.id] = 1;
-      });
-      setQuantities(initialQuantities);
+      // Remove the initialization of quantities
+      setQuantities({});
     } catch (error) {
       console.error("Error fetching medicaments:", error);
     } finally {
@@ -218,7 +222,9 @@ export default function PharmacienDashboard() {
     // Set up a timer to check alertes periodically (every 5 minutes)
     const interval = setInterval(checkAlertes, 300000);
     
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+    };
   }, []);
 
   const handleQuantityChange = (medicamentId: number, value: number) => {
@@ -371,46 +377,55 @@ export default function PharmacienDashboard() {
     }
   };
 
+  const handleCardClick = (medicamentId: number) => {
+    navigate(`/medicament/${medicamentId}`);
+  };
+
   const filteredMedicaments = medicamentsEnVente.filter((m) =>
-    m.nom.toLowerCase().includes(searchTerm.toLowerCase())
+    normalizeText(m.nom).includes(normalizeText(searchTerm))
   );
 
   const filteredFournisseurs = fournisseurs.filter((f) =>
-    (f.nom + " " + f.prenom).toLowerCase().includes(searchTerm.toLowerCase())
+    normalizeText(`${f.nom}${f.prenom}`).includes(normalizeText(searchTerm))
   );
 
   return (
     <div className="dashboard-container">
       {alerteNotifications.length > 0 && (
-        <div className="alerte-notification-indicator" onClick={() => setShowNotifications(!showNotifications)}>
-          <IoMdWarning />
-          <span className="alerte-count">{alerteNotifications.length}</span>
+        <div className="alertes-icon-container">
+          <div className="alertes-icon" onClick={() => setShowNotifications(!showNotifications)}>
+            <IoMdWarning />
+            <span className="alerte-count">{alerteNotifications.length}</span>
+          </div>
           
           {showNotifications && (
-            <div className="alerte-dropdown">
-              <h4>Alertes de stock</h4>
-              {alerteNotifications.map((notification, index) => (
-                <div key={index} className="alerte-notification-item">
-                  <div className="notification-header">
-                    <strong>{notification.alerte.message}</strong>
+            <>
+              <div className="alertes-overlay" onClick={() => setShowNotifications(false)}></div>
+              <div className="alertes-dropdown">
+                <h4>Alertes de stock</h4>
+                {alerteNotifications.map((notification, index) => (
+                  <div key={index} className="alerte-notification-item">
+                    <div className="notification-header">
+                      <strong>{notification.alerte.message}</strong>
+                    </div>
+                    <div className="notification-medicament">
+                      <p className="med-name">
+                        <strong>{notification.medicament.nom}</strong>
+                      </p>
+                      <p className="med-quantity">
+                        Stock actuel: <span className="quantity-value">{notification.medicament.quantite}</span>
+                      </p>
+                      <p className="alerte-min">
+                        Seuil d'alerte: <span className="threshold-value">{notification.alerte.minimumQuantite}</span>
+                      </p>
+                    </div>
+                    <button className="view-med-btn" onClick={() => navigate(`/medicament/${notification.medicament.id}`)}>
+                      Voir détails
+                    </button>
                   </div>
-                  <div className="notification-medicament">
-                    <p className="med-name">
-                      <strong>{notification.medicament.nom}</strong>
-                    </p>
-                    <p className="med-quantity">
-                      Stock actuel: <span className="quantity-value">{notification.medicament.quantite}</span>
-                    </p>
-                    <p className="alerte-min">
-                      Seuil d'alerte: <span className="threshold-value">{notification.alerte.minimumQuantite}</span>
-                    </p>
-                  </div>
-                  <button className="view-med-btn" onClick={() => navigate(`/medicament/${notification.medicament.id}`)}>
-                    Voir détails
-                  </button>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            </>
           )}
         </div>
       )}
@@ -430,30 +445,17 @@ export default function PharmacienDashboard() {
       <main className="dashboard-main">
         <h2>Dashboard Pharmacien</h2>
 
-        <div className="search-bar">
-          <FaSearch className="search-icon" />
-          <input
-            type="text"
-            placeholder={`Rechercher ${searchType === "medicament" ? "un médicament" : "un fournisseur"}...`}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-
-        <div className="search-options">
-          <button onClick={() => setSearchType("medicament")}>Recherche Médicament</button>
-          <button onClick={() => setSearchType("fournisseur")}>Recherche Fournisseur</button>
-        </div>
-
         <div className="stats">
           <div className="card stock-card">
             <h3>En Stock</h3>
-            <p className="value">779 <span>Produits</span></p>
+            <p className="value">
+              0 <span>Unites</span>
+            </p>
           </div>
 
           <div className="card command-card">
             <h3>Commandes</h3>
-            <p className="value">79 <span>En cours</span></p>
+            <p className="value">{commandes.length} <span>En cours</span></p>
           </div>
         </div>
 
@@ -476,48 +478,111 @@ export default function PharmacienDashboard() {
           {loading ? (
             <p>Chargement...</p>
           ) : activeView === "medicaments" ? (
-            <div className="medicaments-cards">
-              {filteredMedicaments.length > 0 ? (
-                filteredMedicaments.map((med) => (
-                  <div key={med.id} className="medicament-card">
-                    <h3 onClick={() => navigate(`/medicament/${med.id}`)}>{med.nom}</h3>
-                    <p className="fournisseur">
-                      Fournisseur: {med.utilisateur?.nom} {med.utilisateur?.prenom}
-                    </p>
-                    <div className="medicament-details">
-                      <span className="price">{med.prix_hospitalier} DH</span>
-                      <span className="quantity">Stock: {med.quantite}</span>
+            <>
+              <div className="search-bar">
+                <FaSearch className="search-icon" />
+                <input
+                  type="text"
+                  placeholder="Rechercher un médicament..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  style={{
+                    backgroundColor: 'white',
+                    color: 'black',
+                    width: '100%'
+                  }}
+                />
+              </div>
+              <div className="medicaments-cards">
+                {filteredMedicaments.length > 0 ? (
+                  filteredMedicaments.map((med) => (
+                    <div 
+                      key={med.id} 
+                      className="medicament-card"
+                      onClick={(e) => {
+                        // Only navigate if the click is on the card itself, not on child elements
+                        if (e.target === e.currentTarget || 
+                            e.target instanceof HTMLElement && 
+                            e.target.classList.contains('medicament-card') ||
+                            e.target instanceof HTMLElement && 
+                            e.target.tagName === 'H3' ||
+                            e.target instanceof HTMLElement && 
+                            e.target.tagName === 'P' ||
+                            e.target instanceof HTMLElement && 
+                            e.target.className === 'medicament-details' ||
+                            e.target instanceof HTMLElement && 
+                            e.target.className === 'price' ||
+                            e.target instanceof HTMLElement && 
+                            e.target.className === 'quantity') {
+                          handleCardClick(med.id);
+                        }
+                      }}
+                    >
+                      <h3>{med.nom}</h3>
+                      <p className="fournisseur">
+                        Fournisseur: {med.utilisateur?.nom} {med.utilisateur?.prenom}
+                      </p>
+                      <div className="medicament-details">
+                        <span className="price">{med.prix_hospitalier} DH</span>
+                        <span className="quantity">Stock: {med.quantite}</span>
+                      </div>
+                      <div className="order-controls">
+                        <div className="quantity-input-container">
+                          <input 
+                            id={`quantity-${med.id}`}
+                            type="number" 
+                            min="1" 
+                            max={med.quantite}
+                            value={quantities[med.id] || ''}
+                            onChange={(e) => handleQuantityChange(med.id, parseInt(e.target.value))}
+                            className="quantity-input"
+                            style={{ 
+                              backgroundColor: 'white', 
+                              color: 'black',
+                              width: '100px'
+                            }}
+                            placeholder="Quantité"
+                            onClick={(e) => e.stopPropagation()} // Prevent click from bubbling up to the card
+                          />
+                        </div>
+                        <button 
+                          className="add-to-cart"
+                          onClick={(e) => {
+                            e.stopPropagation(); // Prevent click from bubbling up to the card
+                            handleAddToCommande(med);
+                          }}
+                        >
+                          Ajouter a la commande
+                        </button>
+                      </div>
                     </div>
-                    <div className="order-controls">
-                      <input 
-                        type="number" 
-                        min="1" 
-                        max={med.quantite}
-                        value={quantities[med.id] || 1}
-                        onChange={(e) => handleQuantityChange(med.id, parseInt(e.target.value))}
-                        className="quantity-input"
-                      />
-                      <button 
-                        className="add-to-cart"
-                        onClick={() => handleAddToCommande(med)}
-                      >
-                        Ajouter a la commande
-                      </button>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="no-results">Aucun médicament en vente trouvé</p>
-              )}
-            </div>
+                  ))
+                ) : (
+                  <p className="no-results">Aucun médicament en vente trouvé</p>
+                )}
+              </div>
+            </>
           ) : (
             <div className="fournisseurs-table">
+              <div className="search-bar">
+                <FaSearch className="search-icon" />
+                <input
+                  type="text"
+                  placeholder="Rechercher un fournisseur..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  style={{
+                    backgroundColor: 'white',
+                    color: 'black',
+                    width: '100%'
+                  }}
+                />
+              </div>
               <table>
                 <thead>
                   <tr>
                     <th>Nom</th>
                     <th>Prénom</th>
-                    <th>Email</th>
                     <th>Téléphone</th>
                     <th>Actions</th>
                   </tr>
@@ -528,7 +593,6 @@ export default function PharmacienDashboard() {
                       <tr key={f.id}>
                         <td>{f.nom}</td>
                         <td>{f.prenom}</td>
-                        <td>{f.email}</td>
                         <td>{f.telephone}</td>
                         <td>
                           <button onClick={() => navigate(`/fournisseur/${f.id}`)}>Voir produits</button>
@@ -537,7 +601,7 @@ export default function PharmacienDashboard() {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={5}>Aucun fournisseur trouvé</td>
+                      <td colSpan={4}>Aucun fournisseur trouvé</td>
                     </tr>
                   )}
                 </tbody>

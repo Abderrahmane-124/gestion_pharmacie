@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import '../Styles/Alerte.css';
+import { useNavigate } from 'react-router-dom';
+import { Button } from 'react-bootstrap';
+import { ArrowLeft } from 'react-bootstrap-icons';
 
 interface Medicament {
   id: number;
@@ -17,6 +20,7 @@ interface Alerte {
 }
 
 const Alerte = () => {
+  const navigate = useNavigate();
   const [alertes, setAlertes] = useState<Alerte[]>([]);
   const [recherche, setRecherche] = useState('');
   const [showForm, setShowForm] = useState(false);
@@ -162,196 +166,193 @@ const Alerte = () => {
       </div>
 
       <div className="container py-5">
-        <h2 className="text-center text-primary mb-4">Gestion des Alertes</h2>
-        <div className="d-flex justify-content-between align-items-center mb-3">
-          <input
-            type="text"
-            className="form-control w-50"
-            placeholder="Rechercher..."
-            value={recherche}
-            onChange={e => setRecherche(e.target.value)}
-          />
-          <button className="btn btn-success ms-3" onClick={() => setShowForm(!showForm)}>
-            {showForm ? 'Annuler' : 'Créer une nouvelle alerte'}
-          </button>
-        </div>
-        
-        {/* Create Form */}
-        {showForm && (
-          <div className="card shadow rounded-4 p-4 mb-4">
-            <h4 className="text-secondary mb-3">Nouvelle alerte</h4>
-            {error && <div className="alert alert-danger">{error}</div>}
-            <form onSubmit={handleCreateAlerte}>
-              <div className="mb-3">
-                <label className="form-label">Message :</label>
-                <textarea
-                  className="form-control"
-                  value={message}
-                  onChange={e => setMessage(e.target.value)}
-                  rows={3}
-                  required
-                />
-              </div>
-              <div className="mb-3">
-                <label className="form-label">Quantité minimum :</label>
-                <input
-                  type="number"
-                  className="form-control"
-                  value={minimumQuantite}
-                  onChange={e => setMinimumQuantite(e.target.value)}
-                  required
-                  min={1}
-                />
-              </div>
-              <div className="mb-3">
-                <label className="form-label">Médicaments concernés :</label>
-                <select
-                  className="form-select"
-                  multiple
-                  value={selectedMedicaments.map(String)}
-                  onChange={e => {
-                    const options = Array.from(e.target.selectedOptions, opt => Number(opt.value));
-                    setSelectedMedicaments(options);
-                  }}
-                  required
-                >
-                  {medicaments.map(med => (
-                    <option key={med.id} value={med.id}>{med.nom}</option>
-                  ))}
-                </select>
-                <small className="text-muted">(Maintenez Ctrl ou Cmd pour sélectionner plusieurs)</small>
-              </div>
-              <button type="submit" className="btn btn-primary w-100 mt-2">Valider</button>
-            </form>
-          </div>
-        )}
-
-        {/* Edit Form */}
-        {showEditForm && currentAlerte && (
-          <div className="card shadow rounded-4 p-4 mb-4">
-            <h4 className="text-secondary mb-3">Modifier l'alerte</h4>
-            {error && <div className="alert alert-danger">{error}</div>}
-            <form onSubmit={handleEditAlerte}>
-              <div className="mb-3">
-                <label className="form-label">Message :</label>
-                <textarea
-                  className="form-control"
-                  value={message}
-                  onChange={e => setMessage(e.target.value)}
-                  rows={3}
-                  required
-                />
-              </div>
-              <div className="mb-3">
-                <label className="form-label">Quantité minimum :</label>
-                <input
-                  type="number"
-                  className="form-control"
-                  value={minimumQuantite}
-                  onChange={e => setMinimumQuantite(e.target.value)}
-                  required
-                  min={1}
-                />
-              </div>
-              <div className="mb-3">
-                <label className="form-label">Médicaments concernés :</label>
-                <select
-                  className="form-select"
-                  multiple
-                  value={selectedMedicaments.map(String)}
-                  onChange={e => {
-                    const options = Array.from(e.target.selectedOptions, opt => Number(opt.value));
-                    setSelectedMedicaments(options);
-                  }}
-                  required
-                >
-                  {medicaments.map(med => (
-                    <option key={med.id} value={med.id}>{med.nom}</option>
-                  ))}
-                </select>
-                <small className="text-muted">(Maintenez Ctrl ou Cmd pour sélectionner plusieurs)</small>
-              </div>
-              <div className="d-flex justify-content-between">
-                <button type="button" className="btn btn-secondary" onClick={closeEditForm}>
-                  Annuler
-                </button>
-                <button type="submit" className="btn btn-primary">
-                  Mettre à jour
-                </button>
-              </div>
-            </form>
-          </div>
-        )}
-
-        <div className="card shadow rounded-4 p-4">
-          <h4 className="text-secondary mb-3">Liste des alertes</h4>
-          {loading ? <p>Chargement...</p> : (
-            <table className="table table-hover align-middle">
-              <thead>
-                <tr>
-                  <th>Message</th>
-                  <th>Date</th>
-                  <th>Quantité min</th>
-                  <th>Médicaments</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtrerAlertes.map((alerte) => (
-                  <tr key={alerte.id}>
-                    <td>{alerte.message}</td>
-                    <td>{new Date(alerte.dateCreation).toLocaleDateString()}</td>
-                    <td>{alerte.minimumQuantite}</td>
-                    <td>{alerte.medicaments.map(m => m.nom).join(', ')}</td>
-                    <td>
-                      <div className="btn-group">
-                        <button 
-                          className="btn btn-sm btn-outline-primary" 
-                          onClick={() => openEditForm(alerte)}
-                        >
-                          Modifier
-                        </button>
-                        <button 
-                          className="btn btn-sm btn-outline-danger" 
-                          onClick={() => setShowDeleteConfirm(alerte.id)}
-                        >
-                          Supprimer
-                        </button>
-                      </div>
-                      
-                      {/* Delete Confirmation */}
-                      {showDeleteConfirm === alerte.id && (
-                        <div className="delete-confirm mt-2">
-                          <p className="text-danger mb-1">Supprimer cette alerte ?</p>
-                          <div className="btn-group btn-group-sm">
-                            <button 
-                              className="btn btn-danger" 
-                              onClick={() => handleDeleteAlerte(alerte.id)}
-                            >
-                              Oui
-                            </button>
-                            <button 
-                              className="btn btn-secondary" 
-                              onClick={() => setShowDeleteConfirm(null)}
-                            >
-                              Non
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-                {filtrerAlertes.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="text-center">
-                      Aucune alerte trouvée
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+        <div className="card shadow rounded-4 p-4 mb-4 position-relative">
+          <Button 
+            variant="success" 
+            className="home-button"
+            onClick={() => navigate('/dashboard-pharmacien')}
+            size="sm"
+          >
+            <ArrowLeft className="me-2" /> Page d'accueil
+          </Button>
+          
+          {/* Create Form */}
+          {showForm && (
+            <div className="inner-card shadow-sm rounded-4 p-4 mb-4 mt-5">
+              <h4 className="text-secondary mb-3">Nouvelle alerte</h4>
+              {error && <div className="alert alert-danger">{error}</div>}
+              <form onSubmit={handleCreateAlerte}>
+                <div className="mb-3">
+                  <label className="form-label">Message :</label>
+                  <textarea
+                    className="form-control"
+                    value={message}
+                    onChange={e => setMessage(e.target.value)}
+                    rows={3}
+                    required
+                  />
+                </div>
+                <div className="mb-3">
+                  <label className="form-label">Quantité minimum :</label>
+                  <input
+                    type="number"
+                    className="form-control"
+                    value={minimumQuantite}
+                    onChange={e => setMinimumQuantite(e.target.value)}
+                    required
+                    min={1}
+                  />
+                </div>
+                <div className="mb-3">
+                  <label className="form-label">Médicaments concernés :</label>
+                  <select
+                    className="form-select"
+                    multiple
+                    value={selectedMedicaments.map(String)}
+                    onChange={e => {
+                      const options = Array.from(e.target.selectedOptions, opt => Number(opt.value));
+                      setSelectedMedicaments(options);
+                    }}
+                    required
+                  >
+                    {medicaments.map(med => (
+                      <option key={med.id} value={med.id}>{med.nom}</option>
+                    ))}
+                  </select>
+                  <small className="text-muted">(Maintenez Ctrl ou Cmd pour sélectionner plusieurs)</small>
+                </div>
+                <button type="submit" className="btn btn-primary w-100 mt-2">Valider</button>
+              </form>
+            </div>
           )}
+
+          {/* Edit Form */}
+          {showEditForm && currentAlerte && (
+            <div className="inner-card shadow-sm rounded-4 p-4 mb-4 mt-5">
+              <h4 className="text-secondary mb-3">Modifier l'alerte</h4>
+              {error && <div className="alert alert-danger">{error}</div>}
+              <form onSubmit={handleEditAlerte}>
+                <div className="mb-3">
+                  <label className="form-label">Message :</label>
+                  <textarea
+                    className="form-control"
+                    value={message}
+                    onChange={e => setMessage(e.target.value)}
+                    rows={3}
+                    required
+                  />
+                </div>
+                <div className="mb-3">
+                  <label className="form-label">Quantité minimum :</label>
+                  <input
+                    type="number"
+                    className="form-control"
+                    value={minimumQuantite}
+                    onChange={e => setMinimumQuantite(e.target.value)}
+                    required
+                    min={1}
+                  />
+                </div>
+                <div className="mb-3">
+                  <label className="form-label">Médicaments concernés :</label>
+                  <select
+                    className="form-select"
+                    multiple
+                    value={selectedMedicaments.map(String)}
+                    onChange={e => {
+                      const options = Array.from(e.target.selectedOptions, opt => Number(opt.value));
+                      setSelectedMedicaments(options);
+                    }}
+                    required
+                  >
+                    {medicaments.map(med => (
+                      <option key={med.id} value={med.id}>{med.nom}</option>
+                    ))}
+                  </select>
+                  <small className="text-muted">(Maintenez Ctrl ou Cmd pour sélectionner plusieurs)</small>
+                </div>
+                <div className="d-flex justify-content-between">
+                  <button type="button" className="btn btn-secondary" onClick={closeEditForm}>
+                    Annuler
+                  </button>
+                  <button type="submit" className="btn btn-primary">
+                    Mettre à jour
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          <div className="inner-card shadow-sm rounded-4 p-4 mt-5">
+            <h4 className="text-secondary mb-3">Liste des alertes</h4>
+            {loading ? <p>Chargement...</p> : (
+              <table className="table table-hover align-middle">
+                <thead>
+                  <tr>
+                    <th>Message</th>
+                    <th>Date</th>
+                    <th>Quantité min</th>
+                    <th>Médicaments</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtrerAlertes.map((alerte) => (
+                    <tr key={alerte.id}>
+                      <td>{alerte.message}</td>
+                      <td>{new Date(alerte.dateCreation).toLocaleDateString()}</td>
+                      <td>{alerte.minimumQuantite}</td>
+                      <td>{alerte.medicaments.map(m => m.nom).join(', ')}</td>
+                      <td>
+                        <div className="btn-group">
+                          <button 
+                            className="btn btn-sm btn-outline-primary" 
+                            onClick={() => openEditForm(alerte)}
+                          >
+                            Modifier
+                          </button>
+                          <button 
+                            className="btn btn-sm btn-outline-danger" 
+                            onClick={() => setShowDeleteConfirm(alerte.id)}
+                          >
+                            Supprimer
+                          </button>
+                        </div>
+                        
+                        {/* Delete Confirmation */}
+                        {showDeleteConfirm === alerte.id && (
+                          <div className="delete-confirm mt-2">
+                            <p className="text-danger mb-1">Supprimer cette alerte ?</p>
+                            <div className="btn-group btn-group-sm">
+                              <button 
+                                className="btn btn-danger" 
+                                onClick={() => handleDeleteAlerte(alerte.id)}
+                              >
+                                Oui
+                              </button>
+                              <button 
+                                className="btn btn-secondary" 
+                                onClick={() => setShowDeleteConfirm(null)}
+                              >
+                                Non
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                  {filtrerAlertes.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="text-center">
+                        Aucune alerte trouvée
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            )}
+          </div>
         </div>
       </div>
     </>

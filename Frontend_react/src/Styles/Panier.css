@@ -27,6 +27,13 @@
   text-decoration: none;
   font-weight: 500;
   transition: all 0.2s;
+  text-align: left;
+  padding-left: 15px;
+  padding-right: 15px;
+  display: inline-flex !important;
+  align-items: center;
+  width: fit-content;
+  min-width: 180px;
 }
 
 .back-button:hover {
@@ -374,4 +381,58 @@
   .panier-title {
     font-size: 1.5rem;
   }
+  
+  .nav-buttons {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  
+  .browse-meds-button {
+    font-size: 0.8rem;
+    padding: 5px 10px;
+  }
+}
+
+.nav-buttons {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  width: 100%;
+  text-align: center;
+}
+
+.browse-meds-button {
+  font-size: 0.85rem;
+  font-weight: 500;
+  border-radius: 6px;
+  padding: 6px 12px;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  display: block;
+  margin: 0 auto;
+  width: auto;
+  max-width: 200px;
+}
+
+.browse-meds-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.home-button {
+  margin-right: 15px;
+  font-weight: 500;
+  min-width: 150px;
+  padding-left: 15px;
+  padding-right: 15px;
+  display: flex;
+  align-items: center;
+  transition: all 0.3s ease;
+  font-size: 0.9rem;
+}
+
+.home-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(40, 167, 69, 0.25);
 } 

@@ -22,6 +22,7 @@ ChartJS.register(
 const DashboardFournisseur = () => {
   // États pour gérer les données et l'UI
   const [medicaments, setMedicaments] = useState<Medicament[]>([]);
+  const [filteredMedicaments, setFilteredMedicaments] = useState<Medicament[]>([]);
   const [commandes, setCommandes] = useState<Order[]>([]);
   const [filteredCommandes, setFilteredCommandes] = useState<Order[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -30,6 +31,8 @@ const DashboardFournisseur = () => {
   const [searchMedicament, setSearchMedicament] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [searchCommandeTerm, setSearchCommandeTerm] = useState('');
+  const [visibilityFilter, setVisibilityFilter] = useState<'all' | 'available' | 'invisible'>('all');
   interface Medicament {
     id: number;
     nom: string;
@@ -74,6 +77,7 @@ const DashboardFournisseur = () => {
         id: number;
         nom: string;
         prix_unitaire: number;
+        prix_hospitalier?: number;
         quantite: number;
       }
     }[];
@@ -179,8 +183,10 @@ const DashboardFournisseur = () => {
             pharmacien: item.pharmacien,
             fournisseur: item.fournisseur,
             lignesCommande: item.lignesCommande,
-            montant: item.lignesCommande.reduce((total: number, ligne: any) => 
-              total + (ligne.quantite * ligne.medicament.prix_unitaire), 0)
+            montant: item.lignesCommande.reduce((total: number, ligne: any) => {
+              const prix = ligne.medicament.prix_hospitalier || ligne.medicament.prix_unitaire || 0;
+              return total + (ligne.quantite * prix);
+            }, 0)
           })) : [];
           
           // Store all commandes in state
@@ -481,6 +487,58 @@ const DashboardFournisseur = () => {
     return () => clearTimeout(timer);
   }, [searchMedicament]);
 
+  // Add a utility function to normalize text
+  const normalizeText = (text: string): string => {
+    return text
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // Remove accents
+      .replace(/['-]/g, '') // Remove apostrophes and hyphens
+      .replace(/\s+/g, ' '); // Normalize spaces
+  };
+
+  // Add useEffect to handle search filtering
+  useEffect(() => {
+    if (searchTerm.trim() === '') {
+      // Appliquer le filtre de visibilité
+      const filtered = medicaments.filter(med => {
+        if (visibilityFilter === 'all') return true;
+        if (visibilityFilter === 'available') return med.en_vente;
+        if (visibilityFilter === 'invisible') return !med.en_vente;
+        return true;
+      });
+      setFilteredMedicaments(filtered);
+    } else {
+      const normalizedSearchTerm = normalizeText(searchTerm);
+      const filtered = medicaments.filter(med => {
+        const matchesSearch = normalizeText(med.nom).includes(normalizedSearchTerm) ||
+          (med.natureDuProduit && normalizeText(med.natureDuProduit).includes(normalizedSearchTerm));
+        
+        // Appliquer le filtre de visibilité
+        if (visibilityFilter === 'all') return matchesSearch;
+        if (visibilityFilter === 'available') return matchesSearch && med.en_vente;
+        if (visibilityFilter === 'invisible') return matchesSearch && !med.en_vente;
+        return matchesSearch;
+      });
+      setFilteredMedicaments(filtered);
+    }
+  }, [searchTerm, medicaments, visibilityFilter]);
+
+  // Add useEffect to handle commandes search filtering
+  useEffect(() => {
+    if (searchCommandeTerm.trim() === '') {
+      // If search is empty, show only EN_ATTENTE orders
+      setFilteredCommandes(commandes.filter(cmd => cmd.statut === "EN_ATTENTE"));
+    } else {
+      const filtered = commandes.filter(cmd => 
+        cmd.statut === "EN_ATTENTE" && 
+        cmd.pharmacien && 
+        `${cmd.pharmacien.nom} ${cmd.pharmacien.prenom}`.toLowerCase().includes(searchCommandeTerm.toLowerCase())
+      );
+      setFilteredCommandes(filtered);
+    }
+  }, [searchCommandeTerm, commandes]);
+
   // Gestion des modals
   const handleAddMedicament = async () => {
     try {
@@ -492,22 +550,27 @@ const DashboardFournisseur = () => {
         dateExpiration = new Date(dateInput.value).toISOString();
       }
       
-      // Get values from form inputs
+      // Helper function to truncate text to 1000 characters
+      const truncateText = (text: string) => {
+        return text ? text.substring(0, 1000) : '';
+      };
+      
+      // Get values from form inputs and truncate text fields
       const medicament = {
-        nom: (document.getElementById('med-nom') as HTMLInputElement).value,
-        code_ATC: (document.getElementById('med-code-atc') as HTMLInputElement).value,
-        dosage: (document.getElementById('med-dosage') as HTMLInputElement).value,
-        presentation: (document.getElementById('med-presentation') as HTMLInputElement).value,
+        nom: truncateText((document.getElementById('med-nom') as HTMLInputElement).value),
+        code_ATC: truncateText((document.getElementById('med-code-atc') as HTMLInputElement).value),
+        dosage: truncateText((document.getElementById('med-dosage') as HTMLInputElement).value),
+        presentation: truncateText((document.getElementById('med-presentation') as HTMLInputElement).value),
         prix_hospitalier: parseFloat((document.getElementById('med-prix-hospitalier') as HTMLInputElement).value) || 0,
         prix_public: parseFloat((document.getElementById('med-prix-public') as HTMLInputElement).value) || 0,
         prix_conseille: parseFloat((document.getElementById('med-prix-Conseillé') as HTMLInputElement).value) || 0,
-        composition: (document.getElementById('med-composition') as HTMLInputElement).value,
-        classe_therapeutique: (document.getElementById('med-classe') as HTMLInputElement).value,
+        composition: truncateText((document.getElementById('med-composition') as HTMLInputElement).value),
+        classe_therapeutique: truncateText((document.getElementById('med-classe') as HTMLInputElement).value),
         quantite: parseInt((document.getElementById('med-quantite') as HTMLInputElement).value) || 0,
         date_expiration: dateExpiration,
-        indications: (document.getElementById('med-indications') as HTMLInputElement).value,
-        natureDuProduit: (document.getElementById('med-nature') as HTMLInputElement).value,
-        tableau: (document.getElementById('med-tableau') as HTMLInputElement).value
+        indications: truncateText((document.getElementById('med-indications') as HTMLInputElement).value),
+        natureDuProduit: truncateText((document.getElementById('med-nature') as HTMLInputElement).value),
+        tableau: truncateText((document.getElementById('med-tableau') as HTMLInputElement).value)
       };
       
       console.log("Sending medicament data:", medicament);
@@ -730,6 +793,43 @@ const DashboardFournisseur = () => {
     }
   };
 
+  // Add new function to toggle all medications visibility
+  const handleToggleAllVisibility = async (makeVisible: boolean) => {
+    try {
+      const token = localStorage.getItem('token');
+      setLoading(true);
+      
+      // Get all medications that need to be updated
+      const medicationsToUpdate = medicaments.filter(med => med.en_vente !== makeVisible);
+      
+      // Update each medication
+      for (const med of medicationsToUpdate) {
+        const response = await fetch(`http://localhost:8080/medicaments/${med.id}/toggle-vente?enVente=${makeVisible}`, {
+          method: 'PUT',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error(`API error: ${response.status}`);
+        }
+      }
+      
+      // Update local state
+      setMedicaments(medicaments.map(med => ({ ...med, en_vente: makeVisible })));
+      
+      setLoading(false);
+      alert(`Tous les médicaments sont maintenant ${makeVisible ? 'disponibles' : 'invisibles'}`);
+    } catch (error) {
+      console.error('Error toggling all visibility:', error);
+      setLoading(false);
+      alert('Erreur lors du changement de visibilité');
+    }
+  };
+
   // Update the handleCommandesClick function
   const handleCommandesClick = () => {
     navigate('/Commandes_fournisseur');
@@ -779,7 +879,7 @@ const DashboardFournisseur = () => {
                 <Card.Body>
                   <div className="stat-icon"><FaClipboardList /></div>
                   <h3>{stats.totalCommandes}</h3>
-                  <p>Commandes totales</p>
+                  <p>Toutes les Commandes</p>
                 </Card.Body>
               </Card>
             </Col>
@@ -823,7 +923,7 @@ const DashboardFournisseur = () => {
                           <div className="chart-container">
                             <h4>Répartition du Stock</h4>
                             {medicaments.length > 0 ? (
-                              <Pie data={stockData} options={{ plugins: { legend: { position: 'bottom' } } }} />
+                              <Pie data={stockData} options={{ plugins: { legend: { display: false } } }} />
                             ) : (
                               <>
                                 <Pie data={stockData} options={{ 
@@ -844,10 +944,58 @@ const DashboardFournisseur = () => {
                           <InputGroup className="mb-3">
                             <InputGroup.Text><FaSearch /></InputGroup.Text>
                             <Form.Control 
-                              placeholder="Rechercher un médicament..." 
+                              placeholder="Rechercher un médicament par nom ou nature du produit" 
                               onChange={(e) => setSearchTerm(e.target.value)}
                             />
                           </InputGroup>
+                          
+                          <div className="d-flex justify-content-between align-items-center mb-3">
+                            <div className="d-flex align-items-center">
+                              <span className="me-2 fw-bold">Filtrer:</span>
+                              <div className="d-flex gap-1">
+                                <Button 
+                                  variant={visibilityFilter === 'all' ? 'primary' : 'outline-primary'}
+                                  size="sm"
+                                  onClick={() => setVisibilityFilter('all')}
+                                >
+                                  Tous
+                                </Button>
+                                <Button 
+                                  variant={visibilityFilter === 'available' ? 'success' : 'outline-success'}
+                                  size="sm"
+                                  onClick={() => setVisibilityFilter('available')}
+                                  className={visibilityFilter === 'available' ? '' : 'btn-custom-gray'}
+                                >
+                                  Disponibles
+                                </Button>
+                                <Button 
+                                  variant="outline-secondary"
+                                  size="sm"
+                                  onClick={() => setVisibilityFilter('invisible')}
+                                  className={`btn-invisible ${visibilityFilter === 'invisible' ? 'active' : ''}`}
+                                >
+                                  Invisibles
+                                </Button>
+                              </div>
+                            </div>
+                            <div className="d-flex gap-1">
+                              <Button 
+                                variant="success" 
+                                size="sm"
+                                onClick={() => handleToggleAllVisibility(true)}
+                              >
+                                Tout disponible
+                              </Button>
+                              <Button 
+                                variant="outline-secondary" 
+                                size="sm"
+                                className="btn-custom-gray"
+                                onClick={() => handleToggleAllVisibility(false)}
+                              >
+                                Tout invisible
+                              </Button>
+                            </div>
+                          </div>
                           
                           <div className="table-responsive">
                             <Table striped hover>
@@ -856,11 +1004,12 @@ const DashboardFournisseur = () => {
                                   <th style={{textAlign: 'left'}}>Nom</th>
                                   <th style={{textAlign: 'left'}}>Quantité</th>
                                   <th style={{textAlign: 'left'}}>Nature du Produit</th>
+                                  <th style={{textAlign: 'left'}}>Prix Hospitalier</th>
                                   <th style={{textAlign: 'right'}}>Actions</th>
                                 </tr>
                               </thead>
                               <tbody>
-                                {medicaments.map(med => (
+                                {filteredMedicaments.map(med => (
                                   <tr 
                                     key={med.id} 
                                     className="table-row-animate"
@@ -868,14 +1017,15 @@ const DashboardFournisseur = () => {
                                     <td style={{textAlign: 'left'}} onClick={() => handleMedicamentClick(med.id)}>{med.nom}</td>
                                     <td style={{textAlign: 'left'}} onClick={() => handleMedicamentClick(med.id)}>{med.quantite}</td>
                                     <td style={{textAlign: 'left'}} onClick={() => handleMedicamentClick(med.id)}>{med.natureDuProduit || 'Non spécifié'}</td>
+                                    <td style={{textAlign: 'left'}} onClick={() => handleMedicamentClick(med.id)}>{med.prix_hospitalier || 'N/A'} {med.prix_hospitalier ? 'DHS' : ''}</td>
                                     <td style={{textAlign: 'right'}}>
                                       <Button variant="outline-primary" size="sm" className="me-1" onClick={() => handleEditMedicament(med)}>
                                         <FaEdit /> Modifier
                                       </Button>
                                       <Button 
-                                        variant={med.en_vente ? "outline-success" : "outline-secondary"} 
+                                        variant={med.en_vente ? "success" : "outline-secondary"} 
                                         size="sm" 
-                                        className="me-1"
+                                        className={`me-1 ${!med.en_vente ? 'btn-custom-gray' : ''}`}
                                         onClick={() => handleToggleVente(med.id, med.en_vente || false)}
                                       >
                                         {med.en_vente ? "Disponible" : "Invisible"}
@@ -895,10 +1045,10 @@ const DashboardFournisseur = () => {
                   </Card>
                 </Tab>
                 
-                <Tab eventKey="commandes" title={<span><FaClipboardList /> Commandes</span>}>
+                <Tab eventKey="commandes" title={<span><FaClipboardList /> Commandes en attente</span>}>
                   <Card className="content-card">
                     <Card.Body>
-                      <h2>Commandes des Pharmacies</h2>
+                      <h2>Commandes en attente des Pharmacies</h2>
                       
                       <Row className="mb-4">
                         <Col lg={12}>
@@ -906,7 +1056,7 @@ const DashboardFournisseur = () => {
                             <InputGroup.Text><FaSearch /></InputGroup.Text>
                             <Form.Control 
                               placeholder="Rechercher par pharmacien..." 
-                              onChange={(e) => setSearchTerm(e.target.value)}
+                              onChange={(e) => setSearchCommandeTerm(e.target.value)}
                             />
                           </InputGroup>
                         </Col>
@@ -944,7 +1094,12 @@ const DashboardFournisseur = () => {
                                     </td>
                                     <td>{commande.montant.toFixed(1)} DHS</td>
                                     <td>
-                                      <Button variant="outline-primary" size="sm" className="me-1" onClick={() => handleViewOrderDetails(commande)}>
+                                      <Button 
+                                        variant="outline-primary" 
+                                        size="sm" 
+                                        className="me-1" 
+                                        onClick={() => navigate(`/detaille-commande/${commande.id}`)}
+                                      >
                                         Détails
                                       </Button>
                                       {commande.statut === "EN_ATTENTE" && (
@@ -1054,14 +1209,17 @@ const DashboardFournisseur = () => {
                 <Form.Group className="mb-3">
                   <Form.Label>Prix Public (DHS)</Form.Label>
                   <Form.Control type="number" min="0" step="0.01" placeholder="Prix public" id="med-prix-public" />
+                  <Form.Text className="text-muted">Prix officiel de vente au public en pharmacie.</Form.Text>
                 </Form.Group>
                 <Form.Group className="mb-3">
                   <Form.Label>Prix Hospitalier (DHS)</Form.Label>
                   <Form.Control type="number" min="0" step="0.01" placeholder="Prix hospitalier" id="med-prix-hospitalier" />
+                  <Form.Text className="text-muted">Prix spécifique pour les établissements hospitaliers.</Form.Text>
                 </Form.Group>
                 <Form.Group className="mb-3">
                   <Form.Label>Prix Conseillé (DHS)</Form.Label>
                   <Form.Control type="number" min="0" step="0.01" placeholder="Prix Conseillé" id="med-prix-Conseillé" />
+                  <Form.Text className="text-muted">Prix recommandé par le fabricant pour la revente.</Form.Text>
                 </Form.Group>
                 <Form.Group className="mb-3">
                   <Form.Label>Composition</Form.Label>
@@ -1228,14 +1386,17 @@ const DashboardFournisseur = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {selectedOrder.lignesCommande.map((ligne) => (
-                    <tr key={ligne.id}>
-                      <td>{ligne.medicament.nom}</td>
-                      <td>{ligne.quantite}</td>
-                      <td>{ligne.medicament.prix_unitaire.toFixed(1)} DHS</td>
-                      <td>{(ligne.quantite * ligne.medicament.prix_unitaire).toFixed(1)} DHS</td>
-                    </tr>
-                  ))}
+                  {selectedOrder.lignesCommande.map((ligne) => {
+                    const prixUnitaire = ligne.medicament.prix_hospitalier || ligne.medicament.prix_unitaire || 0;
+                    return (
+                      <tr key={ligne.id}>
+                        <td>{ligne.medicament.nom}</td>
+                        <td>{ligne.quantite}</td>
+                        <td>{prixUnitaire.toFixed(1)} DHS</td>
+                        <td>{(ligne.quantite * prixUnitaire).toFixed(1)} DHS</td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </Table>
               

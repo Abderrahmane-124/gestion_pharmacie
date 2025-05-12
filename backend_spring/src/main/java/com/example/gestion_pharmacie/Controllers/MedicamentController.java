@@ -100,6 +100,12 @@ public class MedicamentController {
         return ResponseEntity.ok(medicamentsEnVente);
     }
 
+    @PreAuthorize("hasAnyRole('PHARMACIEN', 'FOURNISSEUR')")
+    @GetMapping("/fournisseur/{fournisseurId}")
+    public ResponseEntity<List<Medicament>> getMedicamentsByFournisseur(@PathVariable Long fournisseurId) {
+        return ResponseEntity.ok(medicamentService.getMedicamentsByFournisseur(fournisseurId));
+    }
+
     
 
 

@@ -85,3 +85,46 @@ body {
     margin-right: 4px;
   }
   
+  .home-button {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    margin-right: 15px;
+    font-weight: 500;
+    width: 150px !important;
+    max-width: 150px !important;
+    padding-left: 15px;
+    padding-right: 15px;
+    display: flex;
+    align-items: center;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+    z-index: 100;
+  }
+  
+  .home-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(40, 167, 69, 0.25);
+  }
+  
+  /* Styles pour la nouvelle structure */
+  .inner-card {
+    background-color: #f8f9fa;
+    border: 1px solid #eaecef;
+    position: relative;
+    z-index: 5;
+  }
+  
+  .card.shadow {
+    padding-top: 50px !important; /* Pour laisser de la place au bouton */
+  }
+  
+  .home-button {
+    z-index: 10;
+  }
+  
+  /* Ajuster les styles pour la disposition */
+  .container {
+    padding-top: 2rem;
+  }
+  

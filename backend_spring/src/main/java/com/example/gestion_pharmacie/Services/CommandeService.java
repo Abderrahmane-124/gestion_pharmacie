@@ -128,6 +128,32 @@ public class CommandeService {
                 .collect(Collectors.toList());
     }
 
+    public CommandeResponseDto getCommandeById(Long id) {
+        logger.info("Fetching command details for ID: {}", id);
+        
+        Commande commande = commandeRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Commande non trouvée avec ID: " + id));
+        
+        // Get current user
+        Utilisateur currentUser = userService.getCurrentUser();
+        
+        // Check if user is authorized to view this command
+        if (currentUser.getRole() == Role.PHARMACIEN) {
+            if (!commande.getPharmacien().getId().equals(currentUser.getId())) {
+                throw new RuntimeException("Vous n'êtes pas autorisé à voir cette commande");
+            }
+        } else if (currentUser.getRole() == Role.FOURNISSEUR) {
+            if (!commande.getFournisseur().getId().equals(currentUser.getId())) {
+                throw new RuntimeException("Vous n'êtes pas autorisé à voir cette commande");
+            }
+        } else {
+            throw new RuntimeException("Rôle non autorisé");
+        }
+        
+        logger.info("Successfully retrieved command details for ID: {}", id);
+        return convertToDto(commande);
+    }
+
     @Transactional
     public CommandeResponseDto updateCommandeStatus(Long commandeId, StatutCommande newStatus) {
         logger.info("Updating order status for order ID: {} to {}", commandeId, newStatus);

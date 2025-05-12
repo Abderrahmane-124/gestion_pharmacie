@@ -5,7 +5,7 @@ import VisualiserVente from "./Pages/VisualiserVente";
 import MedicamentDetail from "./Pages/MedicationDetail";
 import Statistique from "./Pages/Statistique";
 import Panier from "./Pages/Panier";
-import ConfirmationCommande from "./Pages/ConfirmationCommande";
+import DetailleCommande from "./Pages/DetailleCommande";
 import VentePharmacien from "./Pages/VentePharmacien";
 import DashboardFournisseur from "./Pages/DashbordFournisseur";
 import Alerte from "./Pages/Alerte";
@@ -18,6 +18,7 @@ import LoginPage from "./Pages/Loginpage";
 import { JSX, useEffect } from "react";
 import React from "react";
 import HistoriquePharmacien from './Pages/HistoriquePharmacien';
+import FournisseurMedicaments from './Pages/FournisseurMedicaments';
 
 // Protected route component that checks authentication
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
@@ -83,7 +84,7 @@ function AppRoutes() {
       <Route path="/medicament/:id" element={setProtectedState(<MedicamentDetail />)} />
       <Route path="/statistique" element={setProtectedState(<Statistique />)} />
       <Route path="/panier" element={setProtectedState(<Panier />)} />
-      <Route path="/confirmation-commande" element={setProtectedState(<ConfirmationCommande />)} />
+      <Route path="/detaille-commande/:id" element={setProtectedState(<DetailleCommande />)} />
       <Route path="/VisualiserVente/:id" element={setProtectedState(<VisualiserVente />)} />
       <Route path="/vente-pharmacien" element={setProtectedState(<VentePharmacien />)} />
       <Route path="/dashboard-Fornisseur" element={setProtectedState(<DashboardFournisseur />)} />
@@ -91,6 +92,7 @@ function AppRoutes() {
       <Route path="/historique-pharmacien" element={setProtectedState(<HistoriquePharmacien />)} />
       <Route path="/Commandes_fournisseur" element={setProtectedState(<Commandes_fournisseur />)} />
       <Route path="/Commandes_pharmacien" element={<Commandes_pharmacien />} />
+      <Route path="/fournisseur/:fournisseurId" element={<FournisseurMedicaments />} />
       
       {/* Fallback route */}
       <Route path="*" element={<Navigate to="/" replace />} />

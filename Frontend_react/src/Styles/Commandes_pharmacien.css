@@ -8,7 +8,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
 }
 
 .commandes-header h1 {
@@ -28,6 +28,78 @@
 
 .back-btn:hover {
   background-color: #2980b9;
+}
+
+/* Search and Filter Styles */
+.search-filter-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  background-color: white;
+  border-radius: 4px;
+  padding: 0.5rem 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  flex: 2;
+  min-width: 250px;
+}
+
+.search-icon {
+  color: #7f8c8d;
+  margin-right: 0.5rem;
+}
+
+.search-bar input {
+  border: none;
+  outline: none;
+  width: 100%;
+  font-size: 1rem;
+  color: #2c3e50;
+}
+
+.status-filter {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+  min-width: 200px;
+}
+
+.status-filter label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #34495e;
+  white-space: nowrap;
+}
+
+.status-filter select {
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: white;
+  font-size: 0.9rem;
+  color: #2c3e50;
+  flex: 1;
+  cursor: pointer;
+}
+
+.no-results {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+  font-size: 1.2rem;
+  color: #7f8c8d;
+  background-color: rgba(255, 255, 255, 0.8);
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .commandes-grid {
@@ -165,6 +237,11 @@
     flex-direction: column;
     gap: 1rem;
     text-align: center;
+  }
+
+  .search-filter-container {
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .commandes-grid {

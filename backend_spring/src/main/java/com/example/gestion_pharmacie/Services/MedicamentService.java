@@ -179,6 +179,12 @@ public class MedicamentService {
         return medicamentRepository.findMedicamentsEnVente();
     }
 
+    public List<Medicament> getMedicamentsByFournisseur(Long fournisseurId) {
+        Utilisateur fournisseur = utilisateurRepository.findById(fournisseurId)
+                .orElseThrow(() -> new RuntimeException("Fournisseur non trouvé"));
+        return medicamentRepository.findByUtilisateur(fournisseur);
+    }
+
 //    public Medicament getMedicamentById(Long id) {
 //        return medicamentRepository.findById(id)
 //                .orElseThrow(() -> new RuntimeException("Medicament not found with id: " + id));

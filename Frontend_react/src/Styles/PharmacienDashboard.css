@@ -106,15 +106,26 @@ body, html {
 
 .search-bar .search-icon {
   margin-right: 10px;
-  color: #7f8c8d;
+  color: #666;
 }
 
 .search-bar input {
   flex: 1;
   padding: 10px;
-  border: none;
-  outline: none;
+  border: 1px solid #ddd;
+  border-radius: 4px;
   font-size: 16px;
+  background-color: white;
+  color: black;
+}
+
+.search-bar input::placeholder {
+  color: #666;
+}
+
+.search-bar input:focus {
+  outline: none;
+  border-color: #3e784d;
 }
 
 .search-options {
@@ -181,11 +192,18 @@ body, html {
   padding: 12px 24px;
   border: none;
   border-radius: 8px;
-  background-color: #e0e0e0;
-  color: #333;
+  background-color: #f5f5f5;
+  color: #666;
   font-weight: bold;
   cursor: pointer;
   transition: all 0.3s ease;
+}
+
+.view-toggle button:hover {
+  background-color: #e0e0e0;
+  color: #333;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .view-toggle button.active {
@@ -212,11 +230,24 @@ body, html {
   flex-direction: column;
   align-items: center;
   cursor: pointer;
+  position: relative;
 }
 
 .medicament-card:hover {
   transform: translateY(-10px);
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  background-color: #f9f9f9;
+}
+
+.medicament-card:hover::after {
+  content: "Voir détails";
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  font-size: 12px;
+  color: #3e784d;
+  font-style: italic;
+  opacity: 0.7;
 }
 
 .medicament-card h3 {
@@ -224,6 +255,13 @@ body, html {
   margin-bottom: 10px;
   color: #333;
   text-align: center;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.medicament-card h3:hover {
+  color: #3e784d;
+  text-decoration: underline;
 }
 
 .medicament-card .fournisseur {
@@ -443,4 +481,187 @@ body, html {
   color: #856404;
   font-size: 0.9em;
   line-height: 1.4;
+}
+
+.quantity-input::-webkit-inner-spin-button,
+.quantity-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.quantity-input[type=number] {
+  -moz-appearance: textfield;
+}
+
+/* Alerts icon styles */
+.alertes-icon-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+}
+
+.alertes-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  height: 50px;
+  background-color: #f8f9fa;
+  border-radius: 50%;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.alertes-icon:hover {
+  transform: scale(1.1);
+  background-color: #f1f1f1;
+}
+
+.alertes-icon svg {
+  font-size: 24px;
+  color: #e74c3c;
+}
+
+.alerte-count {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background-color: #e74c3c;
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.alertes-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.alertes-dropdown {
+  position: absolute;
+  top: 60px;
+  right: 0;
+  width: 350px;
+  max-height: 500px;
+  overflow-y: auto;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  padding: 15px;
+  z-index: 1100;
+  /* Hide scrollbar while maintaining functionality */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.alertes-dropdown::-webkit-scrollbar {
+  display: none;
+}
+
+.alertes-dropdown h4 {
+  color: #333;
+  margin-top: 0;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #eee;
+  text-align: center;
+}
+
+.alerte-notification-item {
+  background-color: #f8f9fa;
+  border-radius: 6px;
+  padding: 12px;
+  margin-bottom: 10px;
+  border-left: 4px solid #e74c3c;
+  transition: all 0.3s ease;
+}
+
+.alerte-notification-item:hover {
+  background-color: #f1f1f1;
+  transform: translateY(-2px);
+}
+
+.notification-header {
+  margin-bottom: 8px;
+}
+
+.notification-medicament {
+  padding: 8px;
+  background-color: white;
+  border-radius: 4px;
+  margin-bottom: 10px;
+}
+
+.med-name {
+  margin: 0 0 8px 0;
+  color: #2c3e50;
+}
+
+.med-quantity, .alerte-min {
+  margin: 5px 0;
+  font-size: 14px;
+  color: #666;
+}
+
+.quantity-value {
+  color: #e74c3c;
+  font-weight: bold;
+}
+
+.threshold-value {
+  color: #3498db;
+  font-weight: bold;
+}
+
+.view-med-btn {
+  background-color: #3e784d;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  width: 100%;
+  transition: background-color 0.3s;
+}
+
+.view-med-btn:hover {
+  background-color: #2d5a39;
 }
