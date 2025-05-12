@@ -46,6 +46,7 @@ export default function MesMedicaments() {
   const [showNewAlerteForm, setShowNewAlerteForm] = useState(false);
   const [sortOption, setSortOption] = useState<SortOption>('alphabetical');
   const [cartItemsCount, setCartItemsCount] = useState<number>(0);
+  const [showZeroQuantity, setShowZeroQuantity] = useState<boolean>(false);
   const [newAlerte, setNewAlerte] = useState({
     message: '',
     minimumQuantite: 1,
@@ -241,9 +242,15 @@ export default function MesMedicaments() {
 
   // Add this function to filter and sort medicaments
   const getFilteredAndSortedMedicaments = () => {
-    const filtered = medicaments.filter(med =>
-      normalizeText(med.nom).includes(normalizeText(searchTerm))
-    );
+    const filtered = medicaments.filter(med => {
+      // Filter by search term
+      const matchesSearch = normalizeText(med.nom).includes(normalizeText(searchTerm));
+      
+      // Filter by quantity (only if showZeroQuantity is false)
+      const matchesQuantity = showZeroQuantity || med.quantite > 0;
+      
+      return matchesSearch && matchesQuantity;
+    });
 
     // Apply sorting based on current sortOption
     return [...filtered].sort((a, b) => {
@@ -325,6 +332,19 @@ export default function MesMedicaments() {
             </button>
           </div>
         </div>
+        
+        {/* Zero quantity filter */}
+        <div className="zero-quantity-filter">
+          <label className="checkbox-container">
+            <input
+              type="checkbox"
+              checked={showZeroQuantity}
+              onChange={() => setShowZeroQuantity(!showZeroQuantity)}
+            />
+            <span className="checkmark"></span>
+            Afficher les médicaments épuisés
+          </label>
+        </div>
       </div>
 
       {loading ? (
@@ -337,7 +357,7 @@ export default function MesMedicaments() {
             <div className="medicaments-list">
               {filteredAndSortedMedicaments.map(med => (
                 <div 
-                  className="medicament-card" 
+                  className={`medicament-card ${med.quantite === 0 ? 'zero-quantity-card' : ''}`} 
                   key={med.id}
                   onClick={(e) => {
                     // Only navigate if the click is on the card itself, not on child interactive elements
@@ -372,7 +392,11 @@ export default function MesMedicaments() {
                   <div className="medicament-content">
                     <div className="medicament-name center">{med.nom}</div>
                     <div className="medicament-info medicament-quantite">
-                      <strong>Quantité:</strong> <span className="quantite-value">{med.quantite}</span>
+                      <strong>Quantité:</strong> 
+                      <span className={`quantite-value ${med.quantite === 0 ? 'zero-quantity' : ''}`}>
+                        {med.quantite}
+                        {med.quantite === 0 && <span className="stock-label">Épuisé</span>}
+                      </span>
                     </div>
                     <div className="medicament-info">
                       <strong>Prix public:</strong> {med.prix_public || med.prix_hospitalier} DH
@@ -390,6 +414,7 @@ export default function MesMedicaments() {
                         value={quantities[med.id] || ""}
                         onChange={e => handleQuantityChange(med.id, e.target.value)}
                         onClick={(e) => e.stopPropagation()} // Prevent card click
+                        disabled={med.quantite === 0}
                       />
                       <button 
                         className="vendre-btn" 
@@ -397,6 +422,7 @@ export default function MesMedicaments() {
                           e.stopPropagation(); // Prevent card click
                           handleAddToPanier(med);
                         }}
+                        disabled={med.quantite === 0}
                       >
                         Ajouter aux panier
                       </button>

@@ -135,6 +135,15 @@ export default function HistoriquePharmacien() {
     console.log('Current paniers state:', paniers);
   }, [paniers]);
 
+  // Sort paniers and commandes in LIFO order (newest first)
+  const sortedPaniers = [...paniers].sort((a, b) => 
+    new Date(b.dateCreation).getTime() - new Date(a.dateCreation).getTime()
+  );
+  
+  const sortedCommandes = [...commandes].sort((a, b) => 
+    new Date(b.dateCreation).getTime() - new Date(a.dateCreation).getTime()
+  );
+
   const calculateTotalHospitalier = (lignesPanier: Panier['lignesPanier']) => {
     return lignesPanier.reduce((total, ligne) => 
       total + ((ligne.medicament?.prix_hospitalier || 0) * ligne.quantite), 0
@@ -208,7 +217,7 @@ export default function HistoriquePharmacien() {
                         <Alert variant="info">Aucune vente effectuée</Alert>
                       ) : (
                         <div className="ventes-list">
-                          {paniers.map(panier => (
+                          {sortedPaniers.map(panier => (
                             <Card key={panier.id} className="commande-card">
                               <Card.Header>
                                 <div className="d-flex justify-content-between align-items-center">
@@ -261,7 +270,7 @@ export default function HistoriquePharmacien() {
                         <Alert variant="info">Aucune commande livrée</Alert>
                       ) : (
                         <div className="commandes-list">
-                          {commandes.map(commande => (
+                          {sortedCommandes.map(commande => (
                             <Card key={commande.id} className="commande-card">
                               <Card.Header>
                                 <div className="d-flex justify-content-between align-items-center">
