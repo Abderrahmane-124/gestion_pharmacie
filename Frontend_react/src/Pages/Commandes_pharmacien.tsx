@@ -40,7 +40,13 @@ export default function Commandes_pharmacien() {
           'Authorization': `Bearer ${token}`
         }
       });
-      setCommandes(response.data);
+      
+      // Sort commandes in LIFO order (newest first)
+      const sortedCommandes = response.data.sort((a: Commande, b: Commande) => 
+        new Date(b.dateCommande).getTime() - new Date(a.dateCommande).getTime()
+      );
+      
+      setCommandes(sortedCommandes);
     } catch (error) {
       console.error("Error fetching commandes:", error);
     } finally {
@@ -132,6 +138,14 @@ export default function Commandes_pharmacien() {
     return matchesSearch && matchesStatus;
   });
 
+  // Calculate total for a commande
+  const calculateTotal = (commande: Commande) => {
+    return commande.lignesCommande.reduce(
+      (total, ligne) => total + ((ligne.medicament.prix_hospitalier || ligne.medicament.prix_unitaire) * ligne.quantite),
+      0
+    ).toFixed(2);
+  };
+
   if (loading) {
     return <div className="loading">Chargement des commandes...</div>;
   }
@@ -186,8 +200,10 @@ export default function Commandes_pharmacien() {
               </div>
               
               <div className="commande-info">
-                <p className="date">Date: {formatDate(commande.dateCommande)}</p>
-                <p className="fournisseur">
+                <p className="date">
+                  Date: {formatDate(commande.dateCommande)}
+                </p>
+                <p className="fournisseur" title={`${commande.fournisseur.nom} ${commande.fournisseur.prenom}`}>
                   Fournisseur: {commande.fournisseur.nom} {commande.fournisseur.prenom}
                 </p>
               </div>
@@ -197,7 +213,9 @@ export default function Commandes_pharmacien() {
                 <ul>
                   {commande.lignesCommande.map((ligne) => (
                     <li key={ligne.id}>
-                      <span className="item-name">{ligne.medicament.nom}</span>
+                      <span className="item-name" title={ligne.medicament.nom}>
+                        {ligne.medicament.nom}
+                      </span>
                       <span className="item-quantity">x{ligne.quantite}</span>
                       <span className="item-price">
                         {((ligne.medicament.prix_hospitalier || ligne.medicament.prix_unitaire) * ligne.quantite).toFixed(2)} DH
@@ -208,12 +226,7 @@ export default function Commandes_pharmacien() {
               </div>
 
               <div className="commande-total">
-                <p>Total: {
-                  commande.lignesCommande.reduce(
-                    (total, ligne) => total + ((ligne.medicament.prix_hospitalier || ligne.medicament.prix_unitaire) * ligne.quantite),
-                    0
-                  ).toFixed(2)
-                } DH</p>
+                <p>Total: {calculateTotal(commande)} DH</p>
               </div>
 
               {commande.statut === "EN_COURS_DE_CREATION" && (
