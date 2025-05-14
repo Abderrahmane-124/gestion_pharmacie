@@ -72,16 +72,7 @@ export default function SignUp() {
     <div className="signup-container">
       <h1>Sign Up</h1>
 
-      <div className="toggle-buttons">
-        <button 
-          className="inactive" 
-          type="button" 
-          onClick={() => navigate("/login")}
-        >
-          Connexion
-        </button>
-        <button className="active" type="button">Inscription</button>
-      </div>
+    
 
       {error && <div className="error-message">{error}</div>}
 
