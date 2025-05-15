@@ -68,8 +68,16 @@ export default function SignUp() {
     }
   };
 
+  const handleBackHome = () => {
+    navigate('/');
+  };
+
   return (
     <div className="signup-container">
+      <button onClick={handleBackHome} className="back-home-btn">
+        <span>&#8592;</span> Accueil
+      </button>
+      
       <h1>Sign Up</h1>
 
     
@@ -122,14 +130,6 @@ export default function SignUp() {
           required 
         />
 
-        <input 
-          type="text" 
-          placeholder="Ville" 
-          name="ville" 
-          value={formData.ville} 
-          onChange={handleChange} 
-          required 
-        />
         
         <input 
           type="text" 
@@ -157,5 +157,6 @@ export default function SignUp() {
         </button>
       </form>
     </div>
+    
   );
 }

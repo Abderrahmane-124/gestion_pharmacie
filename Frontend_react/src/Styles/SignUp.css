@@ -187,6 +187,32 @@ select {
     100% { transform: translateY(0px); }
 }
 
+.back-home-btn {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    padding: 8px 16px;  /* Padding augmenté */
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+    border: none;
+    border-radius: 4px;  /* Border radius légèrement augmenté */
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 15px;  /* Police plus grande */
+    display: flex;
+    align-items: center;
+    gap: 6px;  /* Plus d'espace entre la flèche et le texte */
+    width: fit-content;
+}
+
+.back-home-btn span {
+    font-size: 16px;  /* Flèche plus grande */
+}
+
+.back-home-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
+
 /* Responsive */
 @media (max-width: 600px) {
     .form-row {
