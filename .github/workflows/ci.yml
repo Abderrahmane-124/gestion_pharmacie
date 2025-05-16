@@ -53,6 +53,10 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
+      - name: Fix mvnw permissions
+        working-directory: backend_spring
+        run: chmod +x mvnw
+
       - name: Build with Maven
         working-directory: backend_spring
         run: ./mvnw clean install
