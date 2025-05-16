@@ -26,10 +26,14 @@ public class CommandeController {
         return ResponseEntity.ok(commandeService.createCommande(request));
     }
 
-    @PreAuthorize("hasAnyRole('PHARMACIEN', 'FOURNISSEUR')")
-    @GetMapping
-    public ResponseEntity<List<CommandeResponseDto>> getCommandesPharmacien() {
+    @GetMapping("/current_pharmacien")
+    public ResponseEntity<List<CommandeResponseDto>> getCommandesForCurrentPharmacien() {
         return ResponseEntity.ok(commandeService.getCommandesForCurrentPharmacien());
+    }
+
+    @GetMapping("/current_fournisseur")
+    public ResponseEntity<List<CommandeResponseDto>> getCommandesForCurrentFournisseur() {
+        return ResponseEntity.ok(commandeService.getCommandesForCurrentFournisseur());
     }
 
     @GetMapping("/all")
@@ -37,7 +41,12 @@ public class CommandeController {
         return ResponseEntity.ok(commandeService.getAllCommandes());
     }
 
-    @PreAuthorize("hasRole('FOURNISSEUR')")
+    @GetMapping("/{id}")
+    public ResponseEntity<CommandeResponseDto> getCommandeById(@PathVariable Long id) {
+        return ResponseEntity.ok(commandeService.getCommandeById(id));
+    }
+
+    @PreAuthorize("hasAnyRole('FOURNISSEUR','PHARMACIEN')")
     @PutMapping("/{id}/status")
     public ResponseEntity<CommandeResponseDto> updateCommandeStatus(
             @PathVariable Long id,
@@ -47,7 +56,7 @@ public class CommandeController {
         return ResponseEntity.ok(commandeService.updateCommandeStatus(id, newStatus));
     }
 
-    @PreAuthorize("hasRole('PHARMACIEN')")
+    @PreAuthorize("hasAnyRole('PHARMACIEN', 'FOURNISSEUR')")
     @PutMapping("/{id}/livree")
     public ResponseEntity<CommandeResponseDto> markCommandeAsLivree(@PathVariable Long id) {
         return ResponseEntity.ok(commandeService.updateCommandeToLivree(id));
