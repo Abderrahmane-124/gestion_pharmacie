@@ -76,15 +76,10 @@ export default function LoginPage() {
 
   return (
     <div className="login-container">
-      <h1>Connexion / Inscription</h1>
+    
 
       <div className="toggle-buttons">
-        <button className={activeTab === "login" ? "active" : ""} onClick={() => setActiveTab("login")}>
-          Connexion
-        </button>
-        <button className={activeTab === "register" ? "active" : ""} onClick={() => setActiveTab("register")}>
-          Inscription
-        </button>
+        
       </div>
 
       {error && <div className="error-message">{error}</div>}
