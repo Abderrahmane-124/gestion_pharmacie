@@ -1,8 +1,8 @@
 trigger:
-  - main  # Configure the branches that should trigger a build
+  - main  
 
 pool:
-  vmImage: 'ubuntu-latest'  # Use the latest Ubuntu agent
+  vmImage: 'ubuntu-latest'  
 
 variables:
   # Backend variables
