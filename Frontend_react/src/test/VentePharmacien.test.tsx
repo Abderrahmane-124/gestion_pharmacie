@@ -26,7 +26,7 @@ describe('VentePharmacien Component', () => {
     vi.clearAllMocks();
   });
 
-  test('renders the sales interface correctly', () => {
+  test('renders the sales interface correctly', async () => {
     render(<VentePharmacien />);
     
     // Check main elements are present
@@ -39,8 +39,17 @@ describe('VentePharmacien Component', () => {
       expect(categoryElement).toBeInTheDocument();
     });
     
-    // Check that medication list is displayed
+    // Check that medication list is displayed for Analgésique category (default)
     expect(screen.getByText('Doliprane 1000mg')).toBeInTheDocument();
+    expect(screen.getByText('Dafalgan 500mg')).toBeInTheDocument();
+    
+    // Switch to Anti-inflammatoire category to see Aspirine
+    const antiInflammatoireBtn = screen.getByRole('button', { name: /Anti-inflammatoire/i });
+    await act(async () => {
+      fireEvent.click(antiInflammatoireBtn);
+    });
+    
+    // Now check for Aspirine
     expect(screen.getByText('Aspirine 500mg')).toBeInTheDocument();
     
     // Check cart summary is present
