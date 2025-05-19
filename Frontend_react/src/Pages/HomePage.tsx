@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
-import "../Styles/Homepage.css";
+import "../Styles/HomePage.css";
 import pharmacyLogo from "../assets/preview.jpg"; // Assurez-vous que le chemin est correct
 import appLogo from "../assets/preview.jpg";
 
