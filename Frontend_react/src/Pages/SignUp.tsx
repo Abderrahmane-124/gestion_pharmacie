@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import "../Styles/SignUp.css";
 import { authService } from "../services/api";
 import { useAuth } from "../context/AuthContext";
+import React from "react";
 
 export default function SignUp() {
   const navigate = useNavigate();

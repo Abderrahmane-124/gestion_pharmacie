@@ -143,7 +143,7 @@ input:focus {
 button {
     width: 100%;
     padding: 12px;
-    background: #4CAF50;
+    background: #29522b;
     color: white;
     font-weight: bold;
     border: none;
@@ -154,7 +154,7 @@ button {
 }
 
 button:hover {
-    background: #45a049;
+    background: #274c29;
     transform: translateY(-2px);
 }
 

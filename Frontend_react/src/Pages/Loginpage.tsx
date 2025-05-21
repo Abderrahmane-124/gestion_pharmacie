@@ -73,10 +73,17 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+  const handleBackHome = () => {
+    navigate('/');
+  };
+
 
   return (
-    <div className="login-container">
     
+    <div className="login-container">
+        <button onClick={handleBackHome} className="back-home-btn">
+        <span>&#8592;</span> Accueil
+      </button>
 
       <div className="toggle-buttons">
         
@@ -84,7 +91,7 @@ export default function LoginPage() {
 
       {error && <div className="error-message">{error}</div>}
       
-      <form onSubmit={handleLogin}>
+      <form onSubmit={handleLogin}><br /><br />
         <input 
           type="email" 
           placeholder="Email" 
@@ -102,15 +109,18 @@ export default function LoginPage() {
 
         <button type="submit" className="primary" disabled={loading}>
           {loading ? "Connexion..." : "Se Connecter"}
+          
         </button>
-      </form>
+        <div className="separator">OU</div>
 
-      <div className="separator">OU</div>
-
-      <div className="separator">Pas encore inscrit ?</div>
-      <button className="secondary" onClick={() => navigate("/signup")}>
+        <div className="separator">Pas encore inscrit ?</div>
+        <button className="secondary" onClick={() => navigate("/signup")}>
         Créer un compte
       </button>
+      </form>
+
+     
+      
     </div>
   );
 }
