@@ -67,4 +67,4 @@ jobs:
 
       - name: Build & Test
         working-directory: backend_spring
-        run: ./mvnw clean verify -DskipTests=false
+        run: ./mvnw clean verify -Dspring.profiles.active=test
