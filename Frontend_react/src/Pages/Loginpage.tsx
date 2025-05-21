@@ -115,7 +115,7 @@ export default function LoginPage() {
 
         <div className="separator">Pas encore inscrit ?</div>
         <button className="secondary" onClick={() => navigate("/signup")}>
-        Créer un compte
+        Créer Votre compte
       </button>
       </form>
 
