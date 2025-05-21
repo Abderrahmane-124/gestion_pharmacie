@@ -13,10 +13,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 18
           cache: 'npm'
@@ -44,27 +44,27 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up JDK 23
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: '23'
           distribution: 'temurin'
-          cache: maven
+          cache: 'maven'
+
+      - name: Cache Maven packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('backend_spring/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven
 
       - name: Fix mvnw permissions
         working-directory: backend_spring
         run: chmod +x mvnw
 
-      - name: Build with Maven
+      - name: Build & Test
         working-directory: backend_spring
-        run: ./mvnw clean install
-
-      - name: Test with Maven
-        working-directory: backend_spring
-        run: ./mvnw test
-
-      - name: Verify package
-        working-directory: backend_spring
-        run: ./mvnw verify
+        run: ./mvnw clean verify -DskipTests=false
