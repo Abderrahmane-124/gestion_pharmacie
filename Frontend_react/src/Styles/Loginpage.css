@@ -33,8 +33,6 @@ body {
     position: relative;
 }
 
-/* Remove duplicate .login-container */
-
 .back-to-home {
     position: absolute;
     top: 20px;
@@ -59,7 +57,7 @@ body {
 }
 
 /* TITRE */
-h1 {
+.login-container h1 {
   font-size: 28px;
   text-align: center;
   margin-bottom: 30px;
@@ -78,8 +76,8 @@ h1 {
   }
 }
 
-/* Form styling - updated */
-form {
+/* Form styling - updated with login-container prefix */
+.login-container form {
     background: linear-gradient(
         45deg,
         rgba(76, 175, 80, 0.15),
@@ -97,10 +95,10 @@ form {
     z-index: 1;
 }
 
-/* CHAMPS DE SAISIE */
-input[type="text"],
-input[type="password"],
-input[type="email"] {
+/* CHAMPS DE SAISIE with login-container prefix */
+.login-container input[type="text"],
+.login-container input[type="password"],
+.login-container input[type="email"] {
     width: 100%;
     padding: 12px;
     margin-bottom: 1rem;
@@ -111,36 +109,17 @@ input[type="email"] {
     transition: all 0.3s ease;
 }
 
-input::placeholder {
+.login-container input::placeholder {
     color: rgba(255, 255, 255, 0.9);
 }
 
-input:focus {
+.login-container input:focus {
     outline: none;
     background: rgba(255, 255, 255, 0.3);
 }
 
-/* Update input styling - keep only one version */
-input[type="text"],
-input[type="password"],
-input[type="email"] {
-    width: 100%;
-    padding: 12px;
-    margin-bottom: 1rem;
-    border: none;
-    border-radius: 5px;
-    background: rgba(0, 0, 0, 0.2);
-    color: white;
-    transition: all 0.3s ease;
-}
-
-input:focus {
-    outline: none;
-    background: rgba(255, 255, 255, 0.3);
-}
-
-/* BOUTONS */
-button {
+/* BOUTONS with login-container prefix */
+.login-container button {
     width: 100%;
     padding: 12px;
     background: #29522b;
@@ -153,43 +132,20 @@ button {
     margin-top: 10px;
 }
 
-button:hover {
+.login-container button:hover {
     background: #274c29;
     transform: translateY(-2px);
 }
 
-/* Update button styling - keep only one version */
-button {
-    width: 100%;
-    padding: 12px;
-    background: #4CAF50;
-    color: white;
-    font-weight: bold;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    margin-top: 10px;
-}
-
-button:hover {
-    background: #45a049;
-    transform: translateY(-2px);
-}
-
-button:active {
-    transform: scale(0.98);
-}
-
-/* BOUTONS TOGGLE (Connexion / Inscription) */
-.toggle-buttons {
+/* Continued scoping for other elements... */
+.login-container .toggle-buttons {
   display: flex;
   justify-content: center;
   margin-bottom: 25px;
   gap: 10px;
 }
 
-.toggle-buttons button {
+.login-container .toggle-buttons button {
   padding: 8px 18px;
   border-radius: 20px;
   background-color: #f0f0f0;
@@ -197,29 +153,48 @@ button:active {
   border: 1px solid #ccc;
 }
 
-.toggle-buttons button.active {
+.login-container .toggle-buttons button.active {
   background-color: #2e7d32;
   color: white;
   border-color: #2e7d32;
 }
 
-/* TEXTE DE SÉPARATION */
-.separator {
+.login-container .separator {
   text-align: center;
   margin: 20px 0;
   color: #555;
   font-weight: bold;
 }
 
-/* LIEN */
-a {
+.login-container a {
   color: #4CAF50;
   text-decoration: none;
   transition: color 0.2s;
 }
 
-a:hover {
+.login-container a:hover {
   color: #2e7d32;
+}
+
+/* The rest of your login form styles also need proper scoping */
+.login-container .login-form {
+    background: linear-gradient(
+        45deg,
+        rgba(76, 175, 80, 0.15),
+        rgba(41, 98, 255, 0.15),
+        rgba(76, 175, 80, 0.15)
+    );
+    backdrop-filter: blur(10px);
+    padding: 2.5rem;
+    border-radius: 15px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    width: 100%;
+    max-width: 400px;
+    position: relative;
+    z-index: 1;
+    animation: fadeSlideIn 0.8s ease-out forwards;
+    padding-top: 5rem;
 }
 
 /* Animations */
@@ -235,7 +210,7 @@ a:hover {
 }
 
 /* Form title styling */
-form::before {
+.login-container form::before {
     content: "Login";
     position: absolute;
     top: 0.8rem;
@@ -335,12 +310,12 @@ button:hover {
         padding-right: 2rem;
     }
     
-    .login-form {
+    .login-container .login-form {
         width: 90%;
         padding-top: 4.5rem;
     }
     
-    .login-form::before {
+    .login-container .login-form::before {
         font-size: 1.8rem;
         top: 1.2rem;
     }
