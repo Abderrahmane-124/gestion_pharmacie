@@ -1,45 +1,88 @@
 version: '3.8'
 
 services:
-  postgres:
-    image: postgres:16-alpine
-    container_name: gestion_pharmacie_db
-    environment:
-      POSTGRES_DB: gestion_pharmacie_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: 152300
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   backend:
-    build: ./backend_spring
-    container_name: gestion_pharmacie_backend
-    environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/gestion_pharmacie_db
-      - SPRING_DATASOURCE_USERNAME=postgres
-      - SPRING_DATASOURCE_PASSWORD=152300
+    image: ${DOCKER_USERNAME}/pharmacy-backend:${GITHUB_SHA}
     ports:
       - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/pharmacy
+      - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
     depends_on:
-      postgres:
-        condition: service_healthy
-    restart: unless-stopped
+      - db
+    networks:
+      - pharmacy-network
 
   frontend:
-    build: ./Frontend_react
-    container_name: gestion_pharmacie_frontend
+    image: ${DOCKER_USERNAME}/pharmacy-frontend:${GITHUB_SHA}
     ports:
       - "80:80"
     depends_on:
       - backend
-    restart: unless-stopped
+    networks:
+      - pharmacy-network
+
+  db:
+    image: postgres:14-alpine
+    environment:
+      - POSTGRES_DB=pharmacy
+      - POSTGRES_USER=${DB_USERNAME}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - pharmacy-network
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    depends_on:
+      - prometheus
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
+    ports:
+      - "9200:9200"
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.12.0
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+    depends_on:
+      - elasticsearch
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.12.0
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    depends_on:
+      - elasticsearch
+
+networks:
+  pharmacy-network:
+    driver: bridge
 
 volumes:
   postgres_data: 
