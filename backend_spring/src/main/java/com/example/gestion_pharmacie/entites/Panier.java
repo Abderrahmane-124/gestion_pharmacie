@@ -17,6 +17,10 @@ public class Panier {
 
     private LocalDateTime dateCreation;
 
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean vendu = false;
+
+
     @ManyToOne
     @JoinColumn(name = "pharmacien_id")
     private Pharmacien pharmacien;

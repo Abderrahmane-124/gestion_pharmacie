@@ -1,6 +1,5 @@
 package com.example.gestion_pharmacie.Controllers;
 
-
 import com.example.gestion_pharmacie.Services.GroqService;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;

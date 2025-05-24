@@ -83,37 +83,11 @@ export const authService = {
     return apiClient.post('/auth/login', credentials);
   },
   
-  // Get current user info - this will use the token from localStorage via the interceptor
+  // Updated to use the specific current user endpoint
   getCurrentUser: async () => {
     try {
-      // Try a GET request to fetch all users
-      const response = await apiClient.get('/api/utilisateurs');
-      
-      // Check if we have valid data
-      if (response.data && Array.isArray(response.data)) {
-        const token = localStorage.getItem('token');
-        if (token) {
-          try {
-            const payload = JSON.parse(atob(token.split('.')[1]));
-            const email = payload.sub; // JWT subject is the email
-            
-            console.log("Looking for user with email:", email);
-            console.log("Available users:", response.data);
-            
-            // Find the user with matching email
-            const currentUser = response.data.find(user => user.email === email);
-            if (currentUser) {
-              console.log("Found user:", currentUser);
-              return currentUser;
-            }
-          } catch (error) {
-            console.error("Error parsing token:", error);
-          }
-        }
-      }
-      
-      // If we reach here, we couldn't find the user info
-      throw new Error("Could not find user information");
+      const response = await apiClient.get('/api/utilisateurs/current');
+      return response.data;
     } catch (error) {
       console.error("Error getting current user:", error);
       throw error;

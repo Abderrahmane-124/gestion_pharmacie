@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import "../Styles/SignUp.css";
 import { authService } from "../services/api";
 import { useAuth } from "../context/AuthContext";
+import React from "react";
 
 export default function SignUp() {
   const navigate = useNavigate();
@@ -53,9 +54,9 @@ export default function SignUp() {
       
       // Redirect based on role
       if (formData.role === "PHARMACIEN") {
-        navigate("/PharmacienDashboard");
+        navigate("/dashboard-pharmacien");
       } else if (formData.role === "FOURNISSEUR") {
-        navigate("/FournisseurDashboard");
+        navigate("/dashboard-Fornisseur");
       } else {
         // Default fallback
         navigate("/");
@@ -68,20 +69,19 @@ export default function SignUp() {
     }
   };
 
+  const handleBackHome = () => {
+    navigate('/');
+  };
+
   return (
     <div className="signup-container">
+      <button onClick={handleBackHome} className="back-home-btn">
+        <span>&#8592;</span> Accueil
+      </button>
+      
       <h1>Sign Up</h1>
 
-      <div className="toggle-buttons">
-        <button 
-          className="inactive" 
-          type="button" 
-          onClick={() => navigate("/login")}
-        >
-          Connexion
-        </button>
-        <button className="active" type="button">Inscription</button>
-      </div>
+    
 
       {error && <div className="error-message">{error}</div>}
 
@@ -131,14 +131,6 @@ export default function SignUp() {
           required 
         />
 
-        <input 
-          type="text" 
-          placeholder="Ville" 
-          name="ville" 
-          value={formData.ville} 
-          onChange={handleChange} 
-          required 
-        />
         
         <input 
           type="text" 
@@ -166,5 +158,6 @@ export default function SignUp() {
         </button>
       </form>
     </div>
+    
   );
 }

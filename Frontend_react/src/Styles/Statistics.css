@@ -1,0 +1,233 @@
+/* Statistics.css - Styles pour la page de statistiques */
+
+.statistics-container {
+    min-height: 100vh;
+    width: 100vw;
+    padding: 0;
+    margin: 0;
+    animation: fadeIn 0.5s;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    background-color: #38a169; /* Vert */
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    color: white;
+}
+
+.statistics-content {
+    padding: 20px;
+    width: 100%;
+    flex-grow: 1;
+}
+  
+.statistics-heading {
+    color: white;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    margin: 25px 0;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+  
+.chart-title {
+    font-size: 1.2rem;
+    color: white;
+    margin-bottom: 15px;
+    font-weight: 500;
+    padding: 10px 0;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+  
+.chart-container {
+    background-color: #fff;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    height: 100%;
+}
+  
+.dashboard-card {
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    transition: transform 0.3s, box-shadow 0.3s;
+    background-color: rgba(255, 255, 255, 0.95);
+}
+  
+.dashboard-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+}
+  
+.stat-number {
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: #38a169;
+    margin-bottom: 5px;
+}
+  
+.stat-label {
+    font-size: 1rem;
+    color: #6c757d;
+}
+
+/* Full screen layout adjustments */
+body, html, #root {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+}
+
+.container {
+    max-width: 100% !important;
+    padding: 0 20px !important;
+}
+
+.fade-in {
+    width: 100%;
+}
+
+/* Card adjustments for full screen */
+.card {
+    margin-bottom: 20px;
+    width: 100%;
+    background-color: transparent;
+    border: none;
+}
+
+.card-header {
+    background-color: transparent;
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.card-body {
+    padding: 15px;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+}
+
+/* Table adjustments */
+.table-responsive {
+    margin-top: 15px;
+    overflow-x: auto;
+    max-height: 500px;
+    overflow-y: auto;
+    background-color: white;
+    border-radius: 8px;
+}
+
+.table {
+    margin-bottom: 0;
+}
+
+.table th {
+    background-color: #f8f9fa;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+/* Style pour les lignes cliquables */
+.medication-row {
+    transition: background-color 0.2s, transform 0.1s;
+}
+
+.medication-row:hover {
+    background-color: rgba(56, 161, 105, 0.1) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.medication-row td {
+    vertical-align: middle;
+}
+
+/* Style du nom du médicament */
+.medication-row td:first-child {
+    font-weight: 500;
+    color: #38a169;
+}
+
+/* Style pour le bouton de détail */
+.btn-outline-success {
+    border-color: #38a169;
+    color: #38a169;
+}
+
+.btn-outline-success:hover {
+    background-color: #38a169;
+    color: white;
+}
+
+/* Row and column adjustments */
+.row {
+    margin-right: 0;
+    margin-left: 0;
+    width: 100%;
+}
+
+/* Tab navigation styling */
+.nav-tabs {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+    width: 100%;
+}
+
+.nav-tabs .nav-link {
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.nav-tabs .nav-link:hover {
+    color: white;
+    border-color: transparent;
+}
+
+.nav-tabs .nav-link.active {
+    color: #38a169;
+    background-color: white;
+    border-color: white;
+}
+
+/* Boutton style */
+.btn-outline-secondary {
+    color: white;
+    border-color: white;
+}
+
+.btn-outline-secondary:hover {
+    background-color: white;
+    color: #38a169;
+}
+
+/* Animation */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Ajustement pour l'inventaire détaillé */
+.inventory-section {
+    margin-top: 20px;
+    padding-top: 20px;
+}
+
+/* Titre d'inventaire */
+h4.chart-title {
+    margin-top: 15px;
+    margin-bottom: 20px;
+}
+
+/* Fix for inventory title */
+.inventory-title {
+    padding-top: 25px;
+    margin-top: 20px;
+    display: block;
+    clear: both;
+}
+  

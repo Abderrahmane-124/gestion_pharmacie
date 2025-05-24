@@ -33,4 +33,11 @@ public class PanierController {
         List<PanierResponseDto> paniers = panierService.getPaniersForCurrentPharmacien();
         return ResponseEntity.ok(paniers);
     }
+
+    @PreAuthorize("hasRole('PHARMACIEN')")
+    @PostMapping("/close")
+    public ResponseEntity<PanierResponseDto> closeCurrentPanier() {
+        PanierResponseDto closed = panierService.closeCurrentPanier();
+        return ResponseEntity.ok(closed);
+    }
 }

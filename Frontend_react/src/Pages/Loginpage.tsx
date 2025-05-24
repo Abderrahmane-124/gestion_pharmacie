@@ -33,47 +33,38 @@ export default function LoginPage() {
       // Get the token from the response
       const { token } = response.data;
       
-      // Set the authorization header
+      // Set the authorization header for subsequent requests
       apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       
-      // Make a simple GET request to verify the role
       try {
-        const usersResponse = await apiClient.get('/api/utilisateurs');
-        const users = usersResponse.data;
-        
-        // Find the current user by email
-        let userRole = null;
-        const currentUser = users.find((user: any) => user.email === email);
+        // Use the dedicated endpoint to get current user info
+        const currentUser = await authService.getCurrentUser();
         
         if (currentUser && currentUser.role) {
-          userRole = currentUser.role;
-          console.log("User role:", userRole);
-          
           // Create the user object
           const user = {
-            email,
-            role: userRole
+            email: currentUser.email,
+            role: currentUser.role
           };
           
           // Set the auth info in context
           setAuthInfo(user, token);
           
           // Redirect based on role
-          if (userRole === "PHARMACIEN") {
-            navigate("/PharmacienDashboard");
-          } else if (userRole === "FOURNISSEUR") {
-            navigate("/FournisseurDashboard");
+          if (currentUser.role === "PHARMACIEN") {
+            navigate("/dashboard-pharmacien");
+          } else if (currentUser.role === "FOURNISSEUR") {
+            navigate("/dashboard-Fornisseur");
           } else {
             navigate("/");
           }
         } else {
-          // Fallback if we can't determine the role
           setError("Unable to determine user role");
           setLoading(false);
         }
       } catch (error) {
-        console.error("Error verifying user role:", error);
-        setError("Error verifying user role");
+        console.error("Error getting current user:", error);
+        setError("Error getting user information");
         setLoading(false);
       }
     } catch (err) {
@@ -82,23 +73,25 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+  const handleBackHome = () => {
+    navigate('/');
+  };
+
 
   return (
+    
     <div className="login-container">
-      <h1>Connexion / Inscription</h1>
+        <button onClick={handleBackHome} className="back-home-btn">
+        <span>&#8592;</span> Accueil
+      </button>
 
       <div className="toggle-buttons">
-        <button className={activeTab === "login" ? "active" : ""} onClick={() => setActiveTab("login")}>
-          Connexion
-        </button>
-        <button className={activeTab === "register" ? "active" : ""} onClick={() => setActiveTab("register")}>
-          Inscription
-        </button>
+        
       </div>
 
       {error && <div className="error-message">{error}</div>}
       
-      <form onSubmit={handleLogin}>
+      <form onSubmit={handleLogin}><br /><br />
         <input 
           type="email" 
           placeholder="Email" 
@@ -116,15 +109,18 @@ export default function LoginPage() {
 
         <button type="submit" className="primary" disabled={loading}>
           {loading ? "Connexion..." : "Se Connecter"}
+          
         </button>
+        <div className="separator">OU</div>
+
+        <div className="separator">Pas encore inscrit ?</div>
+        <button className="secondary" onClick={() => navigate("/signup")}>
+        Créer Votre compte
+      </button>
       </form>
 
-      <div className="separator">OU</div>
-
-      <div className="separator">Pas encore inscrit ?</div>
-      <button className="secondary" onClick={() => navigate("/signup")}>
-        Créer un compte
-      </button>
+     
+      
     </div>
   );
 }

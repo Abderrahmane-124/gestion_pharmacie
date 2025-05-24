@@ -33,7 +33,8 @@ public class CommandeResponseDto {
     public static class MedicamentBasicDto {
         private Long id;
         private String nom;
-        private float prix_unitaire;
+        private float prix_hospitalier;
+        private float prix_public;
         private int quantite;
     }
 }

@@ -1,18 +1,46 @@
 import SignUp from "./Pages/SignUp";
+import PharmacienDashboard from "./Pages/PharmacienDashboard";
+import MesMedicaments from "./Pages/MesMedicaments";
+import VisualiserVente from "./Pages/VisualiserVente";
+import MedicamentDetail from "./Pages/MedicationDetail";
+import Statistique from "./Pages/Statistique";
+import Panier from "./Pages/Panier";
+import DetailleCommande from "./Pages/DetailleCommande";
+import VentePharmacien from "./Pages/VentePharmacien";
+import DashboardFournisseur from "./Pages/DashbordFournisseur";
+import Alerte from "./Pages/Alerte";
+import Commandes_fournisseur from "./Pages/Commandes_fournisseur";
+import Commandes_pharmacien from './Pages/Commandes_pharmacien';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
-import DashboardPharmacien from './Pages/PharmacienDashboard';
-import FournisseurDashboard from './Pages/FournisseurDashboard';
-import { JSX, useEffect, useState } from "react";
-import LoginPage from "./Pages/Loginpage";
+import { AuthProvider, useAuth } from "./context/AuthContext";
 import Homepage from "./Pages/HomePage";
+import LoginPage from "./Pages/Loginpage";
+import { JSX, useEffect } from "react";
+import React from "react";
+import HistoriquePharmacien from './Pages/HistoriquePharmacien';
+import FournisseurMedicaments from './Pages/FournisseurMedicaments';
 
-// Auto logout component for public pages
+// Protected route component that checks authentication
+const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
+  const { isAuthenticated, isLoading } = useAuth();
+  
+  if (isLoading) {
+    return <div>Loading...</div>; // Or a better loading component
+  }
+  
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  return children;
+};
+
+// Public route component that always logs out authenticated users
 const PublicRoute = ({ children }: { children: JSX.Element }) => {
-  const { logout, isAuthenticated } = useAuth();
+  const { isAuthenticated, logout } = useAuth();
   
   useEffect(() => {
-    // When this component mounts, log the user out if they're authenticated
+    // Always logout when accessing public routes
     if (isAuthenticated) {
       logout();
     }
@@ -21,48 +49,22 @@ const PublicRoute = ({ children }: { children: JSX.Element }) => {
   return children;
 };
 
-// Protected route component
-const ProtectedRoute = ({ children, role }: { children: JSX.Element, role?: string }) => {
-  const { isAuthenticated, user } = useAuth();
-  const [loading, setLoading] = useState(true);
-  
-  // Use effect to handle the initial loading state
-  useEffect(() => {
-    // Short timeout to allow authentication state to be checked
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 500); // 500ms should be enough for auth check
-    
-    return () => clearTimeout(timer);
-  }, []);
-  
-  // While checking authentication, show nothing (or you could add a loading spinner)
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-  
-  if (!isAuthenticated) {
-    return <Navigate to="/login" />;
-  }
-  
-  if (role && user?.role !== role) {
-    return <Navigate to="/" />;
-  }
-  
-  return children;
-};
-
 function AppRoutes() {
+  // Set state for protected routes to track navigation
+  const setProtectedState = (element: JSX.Element) => {
+    return (
+      <ProtectedRoute>
+        {React.cloneElement(element, { state: { fromProtected: true } })}
+      </ProtectedRoute>
+    );
+  };
+  
   return (
     <Routes>
+      {/* Public Routes */}
       <Route path="/" element={
         <PublicRoute>
           <Homepage />
-        </PublicRoute>
-      } />
-      <Route path="/signup" element={
-        <PublicRoute>
-          <SignUp />
         </PublicRoute>
       } />
       <Route path="/login" element={
@@ -70,22 +72,30 @@ function AppRoutes() {
           <LoginPage />
         </PublicRoute>
       } />
-      <Route 
-        path="/PharmacienDashboard" 
-        element={
-          <ProtectedRoute role="PHARMACIEN">
-            <DashboardPharmacien />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/FournisseurDashboard" 
-        element={
-          <ProtectedRoute role="FOURNISSEUR">
-            <FournisseurDashboard />
-          </ProtectedRoute>
-        } 
-      />
+      <Route path="/signup" element={
+        <PublicRoute>
+          <SignUp />
+        </PublicRoute>
+      } />
+      
+      {/* Protected Routes */}
+      <Route path="/dashboard-pharmacien" element={setProtectedState(<PharmacienDashboard />)} />
+      <Route path="/mes-medicaments" element={setProtectedState(<MesMedicaments />)} />
+      <Route path="/medicament/:id" element={setProtectedState(<MedicamentDetail />)} />
+      <Route path="/statistique" element={setProtectedState(<Statistique />)} />
+      <Route path="/panier" element={setProtectedState(<Panier />)} />
+      <Route path="/detaille-commande/:id" element={setProtectedState(<DetailleCommande />)} />
+      <Route path="/VisualiserVente/:id" element={setProtectedState(<VisualiserVente />)} />
+      <Route path="/vente-pharmacien" element={setProtectedState(<VentePharmacien />)} />
+      <Route path="/dashboard-Fornisseur" element={setProtectedState(<DashboardFournisseur />)} />
+      <Route path="/alerte" element={setProtectedState(<Alerte />)} />
+      <Route path="/historique-pharmacien" element={setProtectedState(<HistoriquePharmacien />)} />
+      <Route path="/Commandes_fournisseur" element={setProtectedState(<Commandes_fournisseur />)} />
+      <Route path="/Commandes_pharmacien" element={<Commandes_pharmacien />} />
+      <Route path="/fournisseur/:fournisseurId" element={<FournisseurMedicaments />} />
+      
+      {/* Fallback route */}
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }
