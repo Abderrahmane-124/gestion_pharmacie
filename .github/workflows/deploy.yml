@@ -63,5 +63,6 @@ jobs:
         chmod 600 ~/.ssh/id_rsa
         
         # Deploy using docker-compose
+        ssh $STAGING_HOST "mkdir -p ~/pharmacy"
         scp docker-compose.yml $STAGING_HOST:~/pharmacy/
         ssh $STAGING_HOST "cd ~/pharmacy && docker-compose pull && docker-compose up -d" 
