@@ -1,5 +1,5 @@
-# Étape 1 : Build avec Maven + JDK 23
-FROM eclipse-temurin:23-jdk AS build
+# Étape 1 : Build avec Maven + JDK 17
+FROM eclipse-temurin:17-jdk AS build
 WORKDIR /app
 
 # Copier les fichiers Maven
@@ -14,8 +14,8 @@ COPY mvnw .
 # Build le projet
 RUN ./mvnw package -DskipTests
 
-# Étape 2 : Exécution avec Java 23
-FROM eclipse-temurin:23-jdk
+# Étape 2 : Exécution avec Java 17
+FROM eclipse-temurin:17-jdk
 WORKDIR /app
 
 COPY --from=build /app/target/*.jar app.jar
