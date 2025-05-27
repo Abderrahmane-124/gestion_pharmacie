@@ -66,6 +66,6 @@ jobs:
         echo "[4.tcp.eu.ngrok.io]:15691 ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCu+E2/E3fsSpoDuvSSUIy92jzxGv1rrui2zA064y4Na2uiukTj0BDawtnvbaUe4azH51652yp4/fwOufsbLJ7T1R67tWPBf+cDjkDw8d4uC4g7wekuBXKTIfpJPNHq7d08uqd2JB8arL3M8c3z/P6DA0P1mwDMvcgsliP1x6biKigyLoqojQ5+afURXyBj/2n1Pjfxl9zDZ0HKsaf1wyZGObU2+HUjVN8KnsT9i/54DSv5ydnut8D4JJJ+ED1s0GCSw9YZhxQCPvKyzGitGpqkESy5PkwQccCu5e41sxghLKbdtsg5PNT4ztHUVpC/SGoPJNmLdzNlYWLn3I8sPDGbcATvTnqJg+S5QPoJZPvWykyJrKQb27RURSzH2U+Ag/5HHln3SNjJAgIOcKo0uyFUMMW4gzXn98NKJvuigNIQDNjpWK2zQBlYWmACOpw192g0gFwVVWBEjMLKSy1TRKKraI3U87GsNau/F6kdADy6g8iYre4UxizTx2GhjRaolJ8=" >> ~/.ssh/known_hosts
     
         # Deploy using docker-compose
-        ssh $STAGING_HOST "mkdir -p ~/pharmacy"
-        scp docker-compose.yml $STAGING_HOST:~/pharmacy/
-        ssh $STAGING_HOST "cd ~/pharmacy && docker-compose pull && docker-compose up -d"
+        ssh -p 15691 $STAGING_HOST "mkdir -p ~/pharmacy"
+        scp -P 15691 docker-compose.yml $STAGING_HOST:~/pharmacy/
+        ssh -p 15691 $STAGING_HOST "cd ~/pharmacy && docker-compose pull && docker-compose up -d"
