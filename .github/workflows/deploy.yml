@@ -40,17 +40,18 @@ jobs:
         DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
         DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
       run: |
+        # Login to Docker Hub
+        echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+        
         # Build and push backend image
         cd backend_spring
-        docker build -t $DOCKER_USERNAME/pharmacy-backend:${{ github.sha }} .
-        echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+        docker build -t $DOCKER_USERNAME/pharmacy-backend:${{ github.sha }} -t $DOCKER_USERNAME/pharmacy-backend:latest .
         docker push $DOCKER_USERNAME/pharmacy-backend:${{ github.sha }}
         docker push $DOCKER_USERNAME/pharmacy-backend:latest
-
         
         # Build and push frontend image
         cd ../Frontend_react
-        docker build -t $DOCKER_USERNAME/pharmacy-frontend:${{ github.sha }} .
+        docker build -t $DOCKER_USERNAME/pharmacy-frontend:${{ github.sha }} -t $DOCKER_USERNAME/pharmacy-frontend:latest .
         docker push $DOCKER_USERNAME/pharmacy-frontend:${{ github.sha }}
         docker push $DOCKER_USERNAME/pharmacy-frontend:latest
         
