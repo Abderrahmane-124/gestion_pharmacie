@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   backend:
-    image: ${DOCKER_USERNAME:-pharmacy}/pharmacy-backend:${GITHUB_SHA:-latest}
+    image: ${DOCKER_USERNAME:-abderrahmane124}/pharmacy-backend:${GITHUB_SHA:-latest}
     ports:
       - "8080:8080"
     environment:
@@ -16,7 +16,7 @@ services:
       - pharmacy-network
 
   frontend:
-    image: ${DOCKER_USERNAME:-pharmacy}/pharmacy-frontend:${GITHUB_SHA:-latest}
+    image: ${DOCKER_USERNAME:-abderrahmane124}/pharmacy-frontend:${GITHUB_SHA:-latest}
     ports:
       - "80:80"
     depends_on:
