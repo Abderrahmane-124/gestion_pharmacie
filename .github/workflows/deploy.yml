@@ -45,11 +45,14 @@ jobs:
         docker build -t $DOCKER_USERNAME/pharmacy-backend:${{ github.sha }} .
         echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
         docker push $DOCKER_USERNAME/pharmacy-backend:${{ github.sha }}
+        docker push $DOCKER_USERNAME/pharmacy-backend:latest
+
         
         # Build and push frontend image
         cd ../Frontend_react
         docker build -t $DOCKER_USERNAME/pharmacy-frontend:${{ github.sha }} .
         docker push $DOCKER_USERNAME/pharmacy-frontend:${{ github.sha }}
+        docker push $DOCKER_USERNAME/pharmacy-frontend:latest
         
     - name: Deploy to Staging
       if: github.ref == 'refs/heads/main'
