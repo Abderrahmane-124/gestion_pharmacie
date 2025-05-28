@@ -67,7 +67,7 @@ jobs:
         chmod 600 ~/.ssh/id_rsa
     
         # Ajouter la clé publique du serveur ngrok dans known_hosts
-        echo "[4.tcp.eu.ngrok.io]:15691 ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCu+E2/E3fsSpoDuvSSUIy92jzxGv1rrui2zA064y4Na2uiukTj0BDawtnvbaUe4azH51652yp4/fwOufsbLJ7T1R67tWPBf+cDjkDw8d4uC4g7wekuBXKTIfpJPNHq7d08uqd2JB8arL3M8c3z/P6DA0P1mwDMvcgsliP1x6biKigyLoqojQ5+afURXyBj/2n1Pjfxl9zDZ0HKsaf1wyZGObU2+HUjVN8KnsT9i/54DSv5ydnut8D4JJJ+ED1s0GCSw9YZhxQCPvKyzGitGpqkESy5PkwQccCu5e41sxghLKbdtsg5PNT4ztHUVpC/SGoPJNmLdzNlYWLn3I8sPDGbcATvTnqJg+S5QPoJZPvWykyJrKQb27RURSzH2U+Ag/5HHln3SNjJAgIOcKo0uyFUMMW4gzXn98NKJvuigNIQDNjpWK2zQBlYWmACOpw192g0gFwVVWBEjMLKSy1TRKKraI3U87GsNau/F6kdADy6g8iYre4UxizTx2GhjRaolJ8=" >> ~/.ssh/known_hosts
+        echo "[7.tcp.eu.ngrok.io]:15658 ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCu+E2/E3fsSpoDuvSSUIy92jzxGv1rrui2zA064y4Na2uiukTj0BDawtnvbaUe4azH51652yp4/fwOufsbLJ7T1R67tWPBf+cDjkDw8d4uC4g7wekuBXKTIfpJPNHq7d08uqd2JB8arL3M8c3z/P6DA0P1mwDMvcgsliP1x6biKigyLoqojQ5+afURXyBj/2n1Pjfxl9zDZ0HKsaf1wyZGObU2+HUjVN8KnsT9i/54DSv5ydnut8D4JJJ+ED1s0GCSw9YZhxQCPvKyzGitGpqkESy5PkwQccCu5e41sxghLKbdtsg5PNT4ztHUVpC/SGoPJNmLdzNlYWLn3I8sPDGbcATvTnqJg+S5QPoJZPvWykyJrKQb27RURSzH2U+Ag/5HHln3SNjJAgIOcKo0uyFUMMW4gzXn98NKJvuigNIQDNjpWK2zQBlYWmACOpw192g0gFwVVWBEjMLKSy1TRKKraI3U87GsNau/F6kdADy6g8iYre4UxizTx2GhjRaolJ8=" >> ~/.ssh/known_hosts
     
         # Deploy using docker-compose
         ssh -p 15691 $STAGING_HOST "mkdir -p ~/pharmacy"
