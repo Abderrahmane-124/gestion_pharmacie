@@ -79,7 +79,7 @@ function AppRoutes() {
       } />
       
       {/* Protected Routes */}
-      <Route path="/dashboard-pharmacien" element={setProtectedState(<PharmacienDashboard />)} />
+      <Route path="/dashboard-pharmacien" element={<PharmacienDashboard />} />
       <Route path="/mes-medicaments" element={setProtectedState(<MesMedicaments />)} />
       <Route path="/medicament/:id" element={setProtectedState(<MedicamentDetail />)} />
       <Route path="/statistique" element={setProtectedState(<Statistique />)} />

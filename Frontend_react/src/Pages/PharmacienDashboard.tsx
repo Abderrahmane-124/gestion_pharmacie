@@ -4,6 +4,7 @@ import "../Styles/PharmacienDashboard.css";
 import { FaSearch } from "react-icons/fa";
 import axios from "axios";
 import { IoMdWarning } from "react-icons/io";
+import { BsChatDots } from "react-icons/bs";
 
 interface Medicament {
   id: number;
@@ -45,6 +46,12 @@ interface Alerte {
   medicaments: Medicament[];
 }
 
+interface ChatMessage {
+  id: number;
+  text: string;
+  isBot: boolean;
+}
+
 export default function PharmacienDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
   const [searchType, setSearchType] = useState<"medicament" | "fournisseur">("medicament");
@@ -61,6 +68,9 @@ export default function PharmacienDashboard() {
     alerte: Alerte;
   }[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [userInput, setUserInput] = useState("");
   const navigate = useNavigate();
 
   const normalizeText = (text: string): string => {
@@ -389,6 +399,37 @@ export default function PharmacienDashboard() {
     normalizeText(`${f.nom}${f.prenom}`).includes(normalizeText(searchTerm))
   );
 
+  const handleChatSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!userInput.trim()) return;
+
+    // Ajouter le message de l'utilisateur
+    const userMessage: ChatMessage = {
+      id: Date.now(),
+      text: userInput,
+      isBot: false,
+    };
+    setChatMessages(prev => [...prev, userMessage]);
+    setUserInput("");
+
+    try {
+      // Appel à votre API de chatbot
+      const response = await axios.post("http://localhost:8080/api/chatbot", {
+        message: userInput
+      });
+
+      // Ajouter la réponse du bot
+      const botMessage: ChatMessage = {
+        id: Date.now() + 1,
+        text: response.data.response,
+        isBot: true,
+      };
+      setChatMessages(prev => [...prev, botMessage]);
+    } catch (error) {
+      console.error("Erreur chatbot:", error);
+    }
+  };
+
   return (
     <div className="dashboard-container">
       {alerteNotifications.length > 0 && (
@@ -648,7 +689,56 @@ export default function PharmacienDashboard() {
             </div>
           </div>
         )}
+
+        <div className={`chatbot-container ${isChatOpen ? 'open' : ''}`}>
+          <button className="chat-toggle" onClick={() => setIsChatOpen(!isChatOpen)}>
+            <BsChatDots />
+          </button>
+
+          {isChatOpen && (
+            <div className="chat-window">
+              <div className="chat-header">
+                <div className="header-content">
+                  <h3>Assistant Virtuel</h3>
+                  <button onClick={() => setIsChatOpen(false)}>&times;</button>
+                </div>
+              </div>
+              
+              <div className="chat-messages">
+                {chatMessages.map((msg) => (
+                  <div key={msg.id} className={`message ${msg.isBot ? 'bot' : 'user'}`}>
+                    <div className="message-content">
+                      <div className="message-text">{msg.text}</div>
+                      <span className="message-time">
+                        {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <form className="chat-input-form" onSubmit={handleChatSubmit}>
+                <input
+                  type="text"
+                  value={userInput}
+                  onChange={(e) => setUserInput(e.target.value)}
+                  placeholder="Écrivez votre message..."
+                />
+                <button type="submit">
+                  <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+                    <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path>
+                  </svg>
+                </button>
+              </form>
+            </div>
+          )}
+        </div>
       </main>
     </div>
   );
 }
+
+/* 
+  Les styles du chatbot doivent être placés dans PharmacienDashboard.css.
+  Veuillez déplacer ce bloc de code CSS dans le fichier src/Styles/PharmacienDashboard.css.
+*/
