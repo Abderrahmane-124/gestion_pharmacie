@@ -413,20 +413,35 @@ export default function PharmacienDashboard() {
     setUserInput("");
 
     try {
+      const token = localStorage.getItem('token');
+      
       // Appel à votre API de chatbot
-      const response = await axios.post("http://localhost:8080/api/chatbot", {
-        message: userInput
-      });
+      const response = await axios.post("http://localhost:8080/api/chat", 
+        { message: userInput },
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
 
       // Ajouter la réponse du bot
       const botMessage: ChatMessage = {
         id: Date.now() + 1,
-        text: response.data.response,
+        text: response.data,
         isBot: true,
       };
       setChatMessages(prev => [...prev, botMessage]);
     } catch (error) {
       console.error("Erreur chatbot:", error);
+      // Add user-friendly error message
+      const errorMessage: ChatMessage = {
+        id: Date.now() + 1,
+        text: "Désolé, une erreur s'est produite. Veuillez réessayer.",
+        isBot: true,
+      };
+      setChatMessages(prev => [...prev, errorMessage]);
     }
   };
 

@@ -10,13 +10,16 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
 
-
 @Service
 public class GroqService {
+    private static final Logger logger = LoggerFactory.getLogger(GroqService.class);
+    
     @Value("${groq.api.key}")
     private String apiKey;
 
@@ -32,12 +35,16 @@ public class GroqService {
     }
 
     public String getChatResponse(String userMessage) {
+        logger.info("Received chat request with message: {}", userMessage);
+        
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(apiKey);
         headers.setContentType(MediaType.APPLICATION_JSON);
+        logger.info("Using API URL: {}", apiUrl);
 
         // Retrieve relevant database information based on the user's query
         Map<String, Object> databaseData = databaseQueryService.getRelevantData(userMessage);
+        logger.info("Retrieved database data: {}", databaseData);
         
         // Create enhanced system message with database context
         String systemPrompt = "You are a helpful pharmacy management assistant. " +
@@ -52,20 +59,55 @@ public class GroqService {
         request.setModel("meta-llama/llama-4-scout-17b-16e-instruct");
         request.setMessages(List.of(systemMessage, userMsg));
 
-        HttpEntity<GroqChatRequest> entity = new HttpEntity<>(request, headers);
+        try {
+            logger.info("Sending request to Groq API: {}", objectMapper.writeValueAsString(request));
+            HttpEntity<GroqChatRequest> entity = new HttpEntity<>(request, headers);
+            ResponseEntity<Map> response = restTemplate.exchange(apiUrl, HttpMethod.POST, entity, Map.class);
+            
+            logger.info("Groq API response status: {}", response.getStatusCode());
+            logger.info("Groq API response body: {}", response.getBody());
+            
+            if (response.getStatusCode().isError()) {
+                String errorMessage = "Failed to get response from Groq API: " + response.getStatusCode();
+                logger.error(errorMessage);
+                throw new RuntimeException(errorMessage);
+            }
 
-        ResponseEntity<Map> response = restTemplate.exchange(apiUrl, HttpMethod.POST, entity, Map.class);
-        System.out.println("Groq raw response: " + response);
-        System.out.println("Body: " + response.getBody());
-        if (response.getStatusCode().isError()) {
-            throw new RuntimeException("Failed to get response from Groq API: " + response.getStatusCode());
+            if (response.getBody() == null) {
+                String errorMessage = "Received null response body from Groq API";
+                logger.error(errorMessage);
+                throw new RuntimeException(errorMessage);
+            }
+
+            // Extract message from response JSON
+            List<Map<String, Object>> choices = (List<Map<String, Object>>) response.getBody().get("choices");
+            if (choices == null || choices.isEmpty()) {
+                String errorMessage = "No choices found in Groq API response";
+                logger.error(errorMessage);
+                throw new RuntimeException(errorMessage);
+            }
+
+            Map<String, Object> message = (Map<String, Object>) choices.get(0).get("message");
+            if (message == null) {
+                String errorMessage = "No message found in first choice";
+                logger.error(errorMessage);
+                throw new RuntimeException(errorMessage);
+            }
+
+            String content = (String) message.get("content");
+            if (content == null) {
+                String errorMessage = "No content found in message";
+                logger.error(errorMessage);
+                throw new RuntimeException(errorMessage);
+            }
+
+            logger.info("Successfully extracted response content: {}", content);
+            return content;
+            
+        } catch (Exception e) {
+            logger.error("Error processing Groq API request", e);
+            throw new RuntimeException("Error processing chat request: " + e.getMessage(), e);
         }
-
-        // Extract message from response JSON
-        List<Map<String, Object>> choices = (List<Map<String, Object>>) response.getBody().get("choices");
-        Map<String, Object> message = (Map<String, Object>) choices.get(0).get("message");
-
-        return (String) message.get("content");
     }
     
     private String formatDatabaseData(Map<String, Object> data) {
@@ -96,6 +138,7 @@ public class GroqService {
             
             return formattedData.toString();
         } catch (Exception e) {
+            logger.error("Error formatting database data", e);
             return "Error formatting database data: " + e.getMessage();
         }
     }
