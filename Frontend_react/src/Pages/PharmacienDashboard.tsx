@@ -706,6 +706,7 @@ export default function PharmacienDashboard() {
         )}
 
         <div className={`chatbot-container ${isChatOpen ? 'open' : ''}`}>
+          {isChatOpen && <div className="chat-overlay" />}
           <button className="chat-toggle" onClick={() => setIsChatOpen(!isChatOpen)}>
             <BsChatDots />
           </button>
@@ -723,7 +724,12 @@ export default function PharmacienDashboard() {
                 {chatMessages.map((msg) => (
                   <div key={msg.id} className={`message ${msg.isBot ? 'bot' : 'user'}`}>
                     <div className="message-content">
-                      <div className="message-text">{msg.text}</div>
+                      <div 
+                        className="message-text"
+                        dangerouslySetInnerHTML={{ 
+                          __html: msg.isBot ? msg.text.replace(/\n/g, '<br>') : msg.text 
+                        }}
+                      />
                       <span className="message-time">
                         {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </span>
@@ -753,7 +759,3 @@ export default function PharmacienDashboard() {
   );
 }
 
-/* 
-  Les styles du chatbot doivent être placés dans PharmacienDashboard.css.
-  Veuillez déplacer ce bloc de code CSS dans le fichier src/Styles/PharmacienDashboard.css.
-*/
