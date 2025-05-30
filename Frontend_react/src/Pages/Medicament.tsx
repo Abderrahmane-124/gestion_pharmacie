@@ -1,11 +1,10 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import "bootstrap/dist/css/bootstrap.min.css";
 import "../Styles/Medicament.css";
 
 export default function MesMedicaments() {
   const navigate = useNavigate();
-
   const [searchTerm, setSearchTerm] = useState("");
   const [medicaments, setMedicaments] = useState([
     {
@@ -52,13 +51,7 @@ export default function MesMedicaments() {
         },
       },
     ]);
-    setNewMedicament({
-      nom: "",
-      description: "",
-      prix: "",
-      quantite: "",
-      expiration: "",
-    });
+    setNewMedicament({ nom: "", description: "", prix: "", quantite: "", expiration: "" });
   };
 
   const handleDelete = (id: number) => {
@@ -79,96 +72,115 @@ export default function MesMedicaments() {
     }
   };
 
+  const handleVisualiserVente = (id: number) => {
+    navigate(`/VisualiserVente/${id}`);
+  };
+
   const filteredMedicaments = medicaments.filter((m) =>
     m.nom.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
-    <div className="mes-medicaments-container">
-      <h2>Mes Médicaments</h2>
+    <div className="container py-4">
+      <h2 className="mb-4 text-center text-primary">Mes Médicaments</h2>
 
-      <div className="search-bar">
+      <div className="mb-4">
         <input
           type="text"
+          className="form-control"
           placeholder="Rechercher un médicament..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
       </div>
 
-      <div className="form-ajout">
-        <input
-          type="text"
-          placeholder="Nom"
-          value={newMedicament.nom}
-          onChange={(e) =>
-            setNewMedicament({ ...newMedicament, nom: e.target.value })
-          }
-        />
-        <input
-          type="text"
-          placeholder="Description"
-          value={newMedicament.description}
-          onChange={(e) =>
-            setNewMedicament({ ...newMedicament, description: e.target.value })
-          }
-        />
-        <input
-          type="number"
-          placeholder="Prix"
-          value={newMedicament.prix}
-          onChange={(e) =>
-            setNewMedicament({ ...newMedicament, prix: e.target.value })
-          }
-        />
-        <input
-          type="number"
-          placeholder="Quantité"
-          value={newMedicament.quantite}
-          onChange={(e) =>
-            setNewMedicament({ ...newMedicament, quantite: e.target.value })
-          }
-        />
-        <input
-          type="date"
-          value={newMedicament.expiration}
-          onChange={(e) =>
-            setNewMedicament({ ...newMedicament, expiration: e.target.value })
-          }
-        />
-        <button onClick={handleAdd}>Ajouter</button>
+      <div className="card p-4 shadow-sm mb-4">
+        <div className="row g-2">
+          <div className="col-md-2">
+            <input
+              type="text"
+              className="form-control"
+              placeholder="Nom"
+              value={newMedicament.nom}
+              onChange={(e) => setNewMedicament({ ...newMedicament, nom: e.target.value })}
+            />
+          </div>
+          <div className="col-md-2">
+            <input
+              type="text"
+              className="form-control"
+              placeholder="Description"
+              value={newMedicament.description}
+              onChange={(e) => setNewMedicament({ ...newMedicament, description: e.target.value })}
+            />
+          </div>
+          <div className="col-md-2">
+            <input
+              type="number"
+              className="form-control"
+              placeholder="Prix"
+              value={newMedicament.prix}
+              onChange={(e) => setNewMedicament({ ...newMedicament, prix: e.target.value })}
+            />
+          </div>
+          <div className="col-md-2">
+            <input
+              type="number"
+              className="form-control"
+              placeholder="Quantité"
+              value={newMedicament.quantite}
+              onChange={(e) => setNewMedicament({ ...newMedicament, quantite: e.target.value })}
+            />
+          </div>
+          <div className="col-md-2">
+            <input
+              type="date"
+              className="form-control"
+              value={newMedicament.expiration}
+              onChange={(e) => setNewMedicament({ ...newMedicament, expiration: e.target.value })}
+            />
+          </div>
+          <div className="col-md-2">
+            <button className="btn btn-success w-100" onClick={handleAdd}>Ajouter</button>
+          </div>
+        </div>
       </div>
 
-      <table className="table-medicaments">
-        <thead>
-          <tr>
-            <th>Nom</th>
-            <th>Prix</th>
-            <th>Quantité</th>
-            <th>Expiration</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredMedicaments.map((m) => (
-            <tr key={m.id}>
-              <td
-                onClick={() => navigate(`/detail-medicament/${m.id}`)}
-                style={{ cursor: "pointer", color: "#007bff" }}
-              >
-                {m.nom}
-              </td>
-              <td>{m.prix} DHS</td>
-              <td>{m.quantite}</td>
-              <td>{m.expiration}</td>
-              <td>
-                <button onClick={() => handleEdit(m.id)}>Modifier</button>
-                <button onClick={() => handleDelete(m.id)}>Supprimer</button>
-              </td>
+      <div className="table-responsive">
+        <table className="table table-striped table-hover">
+          <thead className="table-primary">
+            <tr>
+              <th>Nom</th>
+              <th>Prix</th>
+              <th>Quantité</th>
+              <th>Expiration</th>
+              <th>Actions</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {filteredMedicaments.map((m) => (
+              <tr key={m.id} className="fade-in">
+                <td
+                  onClick={() => navigate(`/detail-medicament/${m.id}`)}
+                  style={{ cursor: "pointer" }}
+                >
+                  <strong className="text-info">{m.nom}</strong>
+                </td>
+                <td>{m.prix} DHS</td>
+                <td>{m.quantite}</td>
+                <td>{m.expiration}</td>
+                <td>
+                  <button className="btn btn-warning btn-sm me-2" onClick={() => handleEdit(m.id)}>Modifier</button>
+                  <button className="btn btn-danger btn-sm me-2" onClick={() => handleDelete(m.id)}>Supprimer</button>
+                  <button className="btn btn-info btn-sm" onClick={() => handleVisualiserVente(m.id)}>
+                    Visualiser vente fournisseur
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

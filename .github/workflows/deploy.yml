@@ -1,0 +1,75 @@
+name: Deploy Application
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up JDK 17
+      uses: actions/setup-java@v3
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        
+    - name: Build Backend
+      run: |
+        cd backend_spring
+        ./mvnw clean package -DskipTests
+        
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        
+    - name: Build Frontend
+      run: |
+        cd Frontend_react
+        npm install
+        npm run build
+        
+    - name: Build and Push Docker Images
+      env:
+        DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+        DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+      run: |
+        # Login to Docker Hub
+        echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+        
+        # Build and push backend image
+        cd backend_spring
+        docker build -t $DOCKER_USERNAME/pharmacy-backend:${{ github.sha }} -t $DOCKER_USERNAME/pharmacy-backend:latest .
+        docker push $DOCKER_USERNAME/pharmacy-backend:${{ github.sha }}
+        docker push $DOCKER_USERNAME/pharmacy-backend:latest
+        
+        # Build and push frontend image
+        cd ../Frontend_react
+        docker build -t $DOCKER_USERNAME/pharmacy-frontend:${{ github.sha }} -t $DOCKER_USERNAME/pharmacy-frontend:latest .
+        docker push $DOCKER_USERNAME/pharmacy-frontend:${{ github.sha }}
+        docker push $DOCKER_USERNAME/pharmacy-frontend:latest
+        
+    - name: Deploy to Staging
+      if: github.ref == 'refs/heads/main'
+      env:
+        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        STAGING_HOST: ${{ secrets.STAGING_HOST }}
+      run: |
+        # Setup SSH
+        mkdir -p ~/.ssh
+        echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+    
+        # Ajouter la clé publique du serveur ngrok dans known_hosts
+        echo "[7.tcp.eu.ngrok.io]:15658 ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCu+E2/E3fsSpoDuvSSUIy92jzxGv1rrui2zA064y4Na2uiukTj0BDawtnvbaUe4azH51652yp4/fwOufsbLJ7T1R67tWPBf+cDjkDw8d4uC4g7wekuBXKTIfpJPNHq7d08uqd2JB8arL3M8c3z/P6DA0P1mwDMvcgsliP1x6biKigyLoqojQ5+afURXyBj/2n1Pjfxl9zDZ0HKsaf1wyZGObU2+HUjVN8KnsT9i/54DSv5ydnut8D4JJJ+ED1s0GCSw9YZhxQCPvKyzGitGpqkESy5PkwQccCu5e41sxghLKbdtsg5PNT4ztHUVpC/SGoPJNmLdzNlYWLn3I8sPDGbcATvTnqJg+S5QPoJZPvWykyJrKQb27RURSzH2U+Ag/5HHln3SNjJAgIOcKo0uyFUMMW4gzXn98NKJvuigNIQDNjpWK2zQBlYWmACOpw192g0gFwVVWBEjMLKSy1TRKKraI3U87GsNau/F6kdADy6g8iYre4UxizTx2GhjRaolJ8=" >> ~/.ssh/known_hosts
+    
+        # Deploy using docker-compose
+        ssh -p 15658 $STAGING_HOST "mkdir -p ~/pharmacy"
+        scp -P 15658 docker-compose.yml $STAGING_HOST:~/pharmacy/
+        ssh -p 15658 $STAGING_HOST "cd ~/pharmacy && docker-compose pull && docker-compose up -d"

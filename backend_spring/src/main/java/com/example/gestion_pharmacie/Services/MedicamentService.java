@@ -4,6 +4,7 @@ import com.example.gestion_pharmacie.Repositorys.FournisseurRepository;
 import com.example.gestion_pharmacie.Repositorys.MedicamentRepository;
 import com.example.gestion_pharmacie.Repositorys.UtilisateurRepository;
 import com.example.gestion_pharmacie.entites.Medicament;
+import com.example.gestion_pharmacie.entites.Role;
 import com.example.gestion_pharmacie.entites.Utilisateur;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -55,7 +56,7 @@ public class MedicamentService {
         }
 
         // Set default values for other fields
-        medicament.setPrix_unitaire(0);
+        medicament.setPrix_hospitalier(0);
         medicament.setQuantite(0);
 
         // Associate with the user
@@ -65,7 +66,7 @@ public class MedicamentService {
         return medicamentRepository.save(medicament);
     }
 
-    public Medicament updateMedicament(Long id, Medicament medicament) {
+     public Medicament updateMedicament(Long id, Medicament medicament) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
 
@@ -74,7 +75,6 @@ public class MedicamentService {
 
         return medicamentRepository.findById(id)
                 .map(existingMedicament -> {
-                    // Check if the current user owns this medication
                     boolean isOwner = false;
                     if (existingMedicament.getUtilisateur() != null &&
                             existingMedicament.getUtilisateur().getId().equals(utilisateur.getId())) {
@@ -85,10 +85,15 @@ public class MedicamentService {
                         throw new RuntimeException("Vous n'êtes pas autorisé à modifier ce médicament");
                     }
 
-                    // Update fields
                     if (medicament.getNom() != null) existingMedicament.setNom(medicament.getNom());
-                    if (medicament.getDescription() != null) existingMedicament.setDescription(medicament.getDescription());
-                    if (medicament.getPrix_unitaire() != 0) existingMedicament.setPrix_unitaire(medicament.getPrix_unitaire());
+                    if (medicament.getIndications() != null) existingMedicament.setIndications(medicament.getIndications());
+                    if (medicament.getCode_ATC() != null) existingMedicament.setCode_ATC(medicament.getCode_ATC());
+                    if (medicament.getDosage() != null) existingMedicament.setDosage(medicament.getDosage());
+                    if (medicament.getPresentation() != null) existingMedicament.setPresentation(medicament.getPresentation());
+                    if (medicament.getPrix_hospitalier() != 0) existingMedicament.setPrix_hospitalier(medicament.getPrix_hospitalier());
+                    if (medicament.getPrix_public() != 0) existingMedicament.setPrix_public(medicament.getPrix_public());
+                    if (medicament.getComposition() != null) existingMedicament.setComposition(medicament.getComposition());
+                    if (medicament.getClasse_therapeutique() != null) existingMedicament.setClasse_therapeutique(medicament.getClasse_therapeutique());
                     if (medicament.getDate_expiration() != null) existingMedicament.setDate_expiration(medicament.getDate_expiration());
                     if (medicament.getQuantite() != 0) existingMedicament.setQuantite(medicament.getQuantite());
 
@@ -96,6 +101,7 @@ public class MedicamentService {
                 })
                 .orElseThrow(() -> new RuntimeException("Medicament not found"));
     }
+
 
     public void deleteMedicament(Long id) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -139,4 +145,48 @@ public class MedicamentService {
     public List<Medicament> searchMedicaments(String nom) {
         return medicamentRepository.findByNomContainingIgnoreCase(nom);
     }
+
+    // java
+    public Medicament toggleEnVente(Long id, boolean enVente) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+
+        Utilisateur utilisateur = utilisateurRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
+
+        // Verify user has FOURNISSEUR role by checking the enum value
+        boolean isFournisseur = utilisateur.getRole() == Role.FOURNISSEUR;
+        
+        if (!isFournisseur) {
+            throw new RuntimeException("Seuls les fournisseurs peuvent modifier le statut de vente");
+        }
+
+        return medicamentRepository.findById(id)
+                .map(existingMedicament -> {
+                    // Verify the user owns this medication
+                    if (existingMedicament.getUtilisateur() == null ||
+                            !existingMedicament.getUtilisateur().getId().equals(utilisateur.getId())) {
+                        throw new RuntimeException("Vous n'êtes pas autorisé à modifier ce médicament");
+                    }
+
+                    existingMedicament.setEn_vente(enVente);
+                    return medicamentRepository.save(existingMedicament);
+                })
+                .orElseThrow(() -> new RuntimeException("Medicament not found"));
+    }
+
+    public List<Medicament> getMedicamentsEnVente() {
+        return medicamentRepository.findMedicamentsEnVente();
+    }
+
+    public List<Medicament> getMedicamentsByFournisseur(Long fournisseurId) {
+        Utilisateur fournisseur = utilisateurRepository.findById(fournisseurId)
+                .orElseThrow(() -> new RuntimeException("Fournisseur non trouvé"));
+        return medicamentRepository.findByUtilisateur(fournisseur);
+    }
+
+//    public Medicament getMedicamentById(Long id) {
+//        return medicamentRepository.findById(id)
+//                .orElseThrow(() -> new RuntimeException("Medicament not found with id: " + id));
+//    }
 }
