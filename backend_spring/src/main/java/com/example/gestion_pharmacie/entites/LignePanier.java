@@ -2,7 +2,7 @@ package com.example.gestion_pharmacie.entites;
 
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
 
 @Entity
 @Data

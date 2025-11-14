@@ -1,7 +1,7 @@
 package com.example.gestion_pharmacie.entites;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
