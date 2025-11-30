@@ -15,6 +15,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import Homepage from "./Pages/HomePage";
 import LoginPage from "./Pages/Loginpage";
+import ClientPage from './Pages/client';
 import { JSX, useEffect } from "react";
 import React from "react";
 import HistoriquePharmacien from './Pages/HistoriquePharmacien';
@@ -75,6 +76,11 @@ function AppRoutes() {
       <Route path="/signup" element={
         <PublicRoute>
           <SignUp />
+        </PublicRoute>
+      } />
+      <Route path="/client" element={
+        <PublicRoute>
+          <ClientPage />
         </PublicRoute>
       } />
       
