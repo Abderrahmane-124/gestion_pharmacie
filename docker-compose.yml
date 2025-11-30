@@ -37,6 +37,37 @@ services:
     networks:
       - pharmacy-network
 
+  sonarqube:
+    image: sonarqube:community
+    container_name: sonarqube
+    depends_on:
+      - db
+    ports:
+      - "9000:9000"
+    environment:
+      - SONAR_ES_BOOTSTRAP_CHECKS_DISABLE=true
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_logs:/opt/sonarqube/logs
+      - sonarqube_extensions:/opt/sonarqube/extensions
+    networks:
+      - pharmacy-network
+
+  sonar-scanner:
+    image: sonarsource/sonar-scanner-cli:latest
+    container_name: sonar-scanner
+    depends_on:
+      - sonarqube
+    working_dir: /usr/src
+    volumes:
+      - ./:/usr/src
+    environment:
+      - SONAR_SCANNER_OPTS=-Dproject.settings=backend_spring/sonar-project.properties
+    networks:
+      - pharmacy-network
+
+
+
   # prometheus:
   #   image: prom/prometheus:latest
   #   ports:
@@ -87,4 +118,7 @@ networks:
     driver: bridge
 
 volumes:
-  postgres_data: 
+  postgres_data:
+  sonarqube_data:
+  sonarqube_logs:
+  sonarqube_extensions:

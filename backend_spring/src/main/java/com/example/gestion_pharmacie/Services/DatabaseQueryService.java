@@ -18,19 +18,22 @@ public class DatabaseQueryService {
     private final CommandeRepository commandeRepository;
     private final LigneCommandeRepository ligneCommandeRepository;
     private final AlerteRepository alerteRepository;
+    private final PanierRepository panierRepository;
 
     public DatabaseQueryService(MedicamentRepository medicamentRepository,
                                 PharmacienRepository pharmacienRepository,
                                 FournisseurRepository fournisseurRepository,
                                 CommandeRepository commandeRepository,
                                 LigneCommandeRepository ligneCommandeRepository,
-                                AlerteRepository alerteRepository) {
+                                AlerteRepository alerteRepository,
+                                PanierRepository panierRepository) {
         this.medicamentRepository = medicamentRepository;
         this.pharmacienRepository = pharmacienRepository;
         this.fournisseurRepository = fournisseurRepository;
         this.commandeRepository = commandeRepository;
         this.ligneCommandeRepository = ligneCommandeRepository;
         this.alerteRepository = alerteRepository;
+        this.panierRepository = panierRepository;
     }
 
     @Transactional(readOnly = true)
@@ -62,6 +65,7 @@ public class DatabaseQueryService {
         boolean asksFournisseurs = q.contains("fournisseur") || q.contains("supplier") || q.contains("suppliers");
         boolean asksPharmaciens = q.contains("pharmacien") || q.contains("pharmacist") || q.contains("pharmacists");
         boolean asksAlertes = q.contains("alerte") || q.contains("alert") || q.contains("alerts");
+        boolean asksPaniers = q.contains("panier") || q.contains("cart") || q.contains("basket") || q.contains("vente") || q.contains("sale") || q.contains("sell");
         boolean asksStats = q.contains("nombre") || q.contains("statistique") || q.contains("combien") || q.contains("total") || q.contains("count") || q.contains("how many") || q.contains("stats");
 
         // Pharmacien context
@@ -72,20 +76,14 @@ public class DatabaseQueryService {
             if (asksMeds) {
                 data.put("medicaments", formatMedicaments(medicamentRepository.findByUtilisateur(pharmacien)));
             }
-            if (asksCommandes) {
-                data.put("commandes", commandeRepository.findByPharmacien(pharmacien));
-            }
-            if (asksFournisseurs) {
-                List<Commande> commandes = commandeRepository.findByPharmacien(pharmacien);
-                List<Fournisseur> fournisseurs = commandes.stream()
-                        .map(Commande::getFournisseur)
-                        .filter(Objects::nonNull)
-                        .distinct()
-                        .collect(Collectors.toList());
-                data.put("fournisseurs", fournisseurs);
-            }
+            // Always expose commandes/alertes/paniers for pharmacist so RAG can use them
+            List<Commande> commandes = commandeRepository.findByPharmacien(pharmacien);
+            data.put("commandes", commandes);
             if (asksAlertes) {
                 data.put("alertes", alerteRepository.findByUtilisateurId(pharmacien.getId()));
+            }
+            if (asksPaniers) {
+                data.put("paniers", panierRepository.findByPharmacien(pharmacien));
             }
             if (asksStats) {
                 data.put("stats", getPharmacienStats(pharmacien));
@@ -212,21 +210,42 @@ public class DatabaseQueryService {
         return medicaments.stream()
                 .filter(Objects::nonNull)
                 .map(medicament -> {
-                    Map<String, String> formattedMed = new HashMap<>();
-                    formattedMed.put("nom", "<strong>" + medicament.getNom() + "</strong>");
-                    String indications = medicament.getIndications();
-                    if (indications != null && !indications.trim().isEmpty()) {
-                        String[] points = indications.split("\\.");
-                        StringBuilder formattedIndications = new StringBuilder();
-                        for (String point : points) {
-                            if (!point.trim().isEmpty()) {
-                                formattedIndications.append("\n• ").append(point.trim());
-                            }
-                        }
-                        formattedMed.put("indications", formattedIndications.toString());
-                    } else {
-                        formattedMed.put("indications", "\n• Aucune indication disponible");
+                    Map<String, String> formattedMed = new LinkedHashMap<>();
+
+                    // Core identification
+                    formattedMed.put("id", medicament.getId() != null ? medicament.getId().toString() : "");
+                    formattedMed.put("nom", Optional.ofNullable(medicament.getNom()).orElse(""));
+                    formattedMed.put("code_ATC", Optional.ofNullable(medicament.getCode_ATC()).orElse(""));
+
+                    // Presentation / dosage
+                    formattedMed.put("dosage", Optional.ofNullable(medicament.getDosage()).orElse(""));
+                    formattedMed.put("presentation", Optional.ofNullable(medicament.getPresentation()).orElse(""));
+
+                    // Pricing (use hospitalier/public/conseille as strings)
+                    formattedMed.put("prix_hospitalier", String.valueOf(medicament.getPrix_hospitalier()));
+                    formattedMed.put("prix_public", String.valueOf(medicament.getPrix_public()));
+                    formattedMed.put("prix_conseille", String.valueOf(medicament.getPrix_conseille()));
+
+                    // Therapeutic info
+                    formattedMed.put("composition", Optional.ofNullable(medicament.getComposition()).orElse(""));
+                    formattedMed.put("classe_therapeutique", Optional.ofNullable(medicament.getClasse_therapeutique()).orElse(""));
+                    formattedMed.put("indications", Optional.ofNullable(medicament.getIndications()).orElse(""));
+
+                    // Stock & expiration
+                    formattedMed.put("quantite", String.valueOf(medicament.getQuantite()));
+                    formattedMed.put("date_expiration", medicament.getDate_expiration() != null ? medicament.getDate_expiration().toString() : "");
+
+                    // Regulatory / classification
+                    formattedMed.put("natureDuProduit", Optional.ofNullable(medicament.getNatureDuProduit()).orElse(""));
+                    formattedMed.put("tableau", Optional.ofNullable(medicament.getTableau()).orElse(""));
+                    formattedMed.put("en_vente", String.valueOf(medicament.isEn_vente()));
+
+                    // Ownership / provenance (no sensitive details)
+                    if (medicament.getUtilisateur() != null) {
+                        formattedMed.put("proprietaireId", medicament.getUtilisateur().getId() != null ? medicament.getUtilisateur().getId().toString() : "");
+                        formattedMed.put("proprietaireRole", medicament.getUtilisateur().getRole() != null ? medicament.getUtilisateur().getRole().name() : "");
                     }
+
                     return formattedMed;
                 })
                 .collect(Collectors.toList());
