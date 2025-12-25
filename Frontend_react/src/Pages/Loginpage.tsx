@@ -55,7 +55,10 @@ export default function LoginPage() {
             navigate("/dashboard-pharmacien");
           } else if (currentUser.role === "FOURNISSEUR") {
             navigate("/dashboard-Fornisseur");
-          } else {
+          } else if (currentUser.role === "CLIENT") {
+            navigate("/client");
+          }
+          else {
             navigate("/");
           }
         } else {

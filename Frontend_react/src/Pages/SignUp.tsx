@@ -57,6 +57,9 @@ export default function SignUp() {
         navigate("/dashboard-pharmacien");
       } else if (formData.role === "FOURNISSEUR") {
         navigate("/dashboard-Fornisseur");
+      } 
+      else if (formData.role === "CLIENT") {
+        navigate("/client");
       } else {
         // Default fallback
         navigate("/");
@@ -147,6 +150,7 @@ export default function SignUp() {
         >
           <option value="FOURNISSEUR">Fournisseur</option>
           <option value="PHARMACIEN">Pharmacien</option>
+          <option value="CLIENT">Client</option>
         </select>
 
         <button 

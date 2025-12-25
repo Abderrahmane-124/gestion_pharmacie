@@ -78,13 +78,9 @@ function AppRoutes() {
           <SignUp />
         </PublicRoute>
       } />
-      <Route path="/client" element={
-        <PublicRoute>
-          <ClientPage />
-        </PublicRoute>
-      } />
       
       {/* Protected Routes */}
+      <Route path="/client" element={setProtectedState(<ClientPage />)} />
       <Route path="/dashboard-pharmacien" element={<PharmacienDashboard />} />
       <Route path="/mes-medicaments" element={setProtectedState(<MesMedicaments />)} />
       <Route path="/medicament/:id" element={setProtectedState(<MedicamentDetail />)} />

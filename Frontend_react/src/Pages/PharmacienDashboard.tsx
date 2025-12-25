@@ -71,6 +71,7 @@ export default function PharmacienDashboard() {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [userInput, setUserInput] = useState("");
+  const [isSendingMessage, setIsSendingMessage] = useState(false);
   const navigate = useNavigate();
 
   const normalizeText = (text: string): string => {
@@ -401,7 +402,7 @@ export default function PharmacienDashboard() {
 
   const handleChatSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!userInput.trim()) return;
+    if (!userInput.trim() || isSendingMessage) return;
 
     // Ajouter le message de l'utilisateur
     const userMessage: ChatMessage = {
@@ -410,14 +411,21 @@ export default function PharmacienDashboard() {
       isBot: false,
     };
     setChatMessages(prev => [...prev, userMessage]);
+    const userMessageText = userInput;
     setUserInput("");
+    setIsSendingMessage(true);
 
     try {
       const token = localStorage.getItem('token');
       
-      // Appel à votre API de chatbot
-      const response = await axios.post("http://localhost:8080/api/chat", 
-        { message: userInput },
+      // Appel à l'API RAG
+      const response = await axios.post("http://localhost:8080/api/rag/chat", 
+        { 
+          message: userMessageText,
+          max_new_tokens: 512,
+          temperature: 0.7,
+          top_p: 0.9
+        },
         {
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -426,10 +434,13 @@ export default function PharmacienDashboard() {
         }
       );
 
+      // Extraire la réponse de l'IA
+      const aiResponseText = response.data.answer || response.data.response || "Désolé, je n'ai pas pu générer une réponse.";
+
       // Ajouter la réponse du bot
       const botMessage: ChatMessage = {
         id: Date.now() + 1,
-        text: response.data,
+        text: aiResponseText,
         isBot: true,
       };
       setChatMessages(prev => [...prev, botMessage]);
@@ -438,10 +449,12 @@ export default function PharmacienDashboard() {
       // Add user-friendly error message
       const errorMessage: ChatMessage = {
         id: Date.now() + 1,
-        text: "Désolé, une erreur s'est produite. Veuillez réessayer.",
+        text: "Désolé, je rencontre des difficultés à me connecter au serveur. Veuillez réessayer plus tard.",
         isBot: true,
       };
       setChatMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsSendingMessage(false);
     }
   };
 
@@ -736,6 +749,17 @@ export default function PharmacienDashboard() {
                     </div>
                   </div>
                 ))}
+                {isSendingMessage && (
+                  <div className="message bot">
+                    <div className="message-content">
+                      <div className="message-text">
+                        <span style={{ animation: 'pulse 1.5s ease-in-out infinite' }}>●</span>
+                        <span style={{ animation: 'pulse 1.5s ease-in-out infinite', animationDelay: '0.2s' }}>●</span>
+                        <span style={{ animation: 'pulse 1.5s ease-in-out infinite', animationDelay: '0.4s' }}>●</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <form className="chat-input-form" onSubmit={handleChatSubmit}>
@@ -744,8 +768,9 @@ export default function PharmacienDashboard() {
                   value={userInput}
                   onChange={(e) => setUserInput(e.target.value)}
                   placeholder="Écrivez votre message..."
+                  disabled={isSendingMessage}
                 />
-                <button type="submit">
+                <button type="submit" disabled={isSendingMessage || userInput.trim() === ''}>
                   <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
                     <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path>
                   </svg>

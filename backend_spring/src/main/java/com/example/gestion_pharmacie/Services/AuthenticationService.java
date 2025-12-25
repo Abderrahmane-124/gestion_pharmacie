@@ -5,6 +5,7 @@ import com.example.gestion_pharmacie.DTO.AuthResponse;
 import com.example.gestion_pharmacie.DTO.LoginUserDto;
 import com.example.gestion_pharmacie.DTO.RegisterUserDto;
 import com.example.gestion_pharmacie.Repositorys.UtilisateurRepository;
+import com.example.gestion_pharmacie.entites.Client;
 import com.example.gestion_pharmacie.entites.Fournisseur;
 import com.example.gestion_pharmacie.entites.Pharmacien;
 import com.example.gestion_pharmacie.entites.Role;
@@ -54,6 +55,9 @@ public class AuthenticationService {
                 Fournisseur fournisseur = new Fournisseur();
                 fournisseur.setTelephone(dto.getTelephone());
                 utilisateur = fournisseur;
+                break;
+            case CLIENT:
+                utilisateur = new Client();
                 break;
             default:
                 throw new IllegalArgumentException("Rôle non valide");

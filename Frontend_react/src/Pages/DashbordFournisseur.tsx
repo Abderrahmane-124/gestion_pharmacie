@@ -4,8 +4,10 @@ import { Container, Row, Col, Card, Button, Table, Form, Badge, Tabs, Tab, Modal
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, PointElement, LineElement, Title, BarElement } from 'chart.js';
 import { Pie, Line } from 'react-chartjs-2';
 import { FaPills, FaClipboardList, FaTruck, FaWarehouse, FaSearch, FaEdit, FaTrash, FaPlus, FaFilter } from 'react-icons/fa';
+import { MessageCircle, Send, Bot, X } from 'lucide-react';
 import '../Styles/dashboardFournisseur.css';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 ChartJS.register(
   ArcElement, 
@@ -86,6 +88,14 @@ const DashboardFournisseur = () => {
   
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Chatbot states
+  const [chatOpen, setChatOpen] = useState(false);
+  const [messages, setMessages] = useState([
+    { id: 1, text: "Bonjour ! Je suis votre assistant virtuel. Comment puis-je vous aider aujourd'hui ?", sender: 'bot', time: '10:30' }
+  ]);
+  const [inputMessage, setInputMessage] = useState('');
+  const [isSendingMessage, setIsSendingMessage] = useState(false);
 
   // Add the navigate hook near the other hooks
   const navigate = useNavigate();
@@ -835,6 +845,65 @@ const DashboardFournisseur = () => {
     navigate('/Commandes_fournisseur');
   };
 
+  // Chatbot message handler
+  const handleSendMessage = async () => {
+    if (inputMessage.trim() === '' || isSendingMessage) return;
+
+    const userMessageText = inputMessage;
+    const newMessage = {
+      id: messages.length + 1,
+      text: userMessageText,
+      sender: 'user',
+      time: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+    };
+
+    setMessages([...messages, newMessage]);
+    setInputMessage('');
+    setIsSendingMessage(true);
+
+    try {
+      const token = localStorage.getItem('token');
+      
+      // Call the RAG API
+      const response = await axios.post('http://localhost:8080/api/rag/chat', {
+        message: userMessageText,
+        max_new_tokens: 512,
+        temperature: 0.7,
+        top_p: 0.9
+      }, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      // Extract the AI response
+      const aiResponseText = response.data.answer || response.data.response || "Désolé, je n'ai pas pu générer une réponse.";
+      
+      const botResponse = {
+        id: messages.length + 2,
+        text: aiResponseText,
+        sender: 'bot',
+        time: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+      };
+      
+      setMessages(prev => [...prev, botResponse]);
+    } catch (error: any) {
+      console.error('Erreur lors de l\'envoi du message:', error);
+      
+      // Fallback to local response if API fails
+      const botResponse = {
+        id: messages.length + 2,
+        text: "Désolé, je rencontre des difficultés à me connecter au serveur. Veuillez réessayer plus tard.",
+        sender: 'bot',
+        time: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+      };
+      setMessages(prev => [...prev, botResponse]);
+    } finally {
+      setIsSendingMessage(false);
+    }
+  };
+
   return (
     <div className="dashboard-fournisseur">
       {loading ? (
@@ -1449,6 +1518,183 @@ const DashboardFournisseur = () => {
           </Button>
         </Modal.Footer>
       </Modal>
+
+      {/* Chatbot Button */}
+      <button
+        onClick={() => setChatOpen(!chatOpen)}
+        className="client-chat-button"
+        style={{
+          position: 'fixed',
+          bottom: '2rem',
+          right: '2rem',
+          width: '60px',
+          height: '60px',
+          borderRadius: '50%',
+          backgroundColor: '#8e44ad',
+          color: 'white',
+          border: 'none',
+          cursor: 'pointer',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          transition: 'all 0.3s ease',
+          zIndex: 1000
+        }}
+      >
+        {chatOpen ? <X size={28} /> : <MessageCircle size={28} />}
+      </button>
+
+      {/* Chatbot Window */}
+      {chatOpen && (
+        <div className="client-chat-window" style={{
+          position: 'fixed',
+          bottom: '100px',
+          right: '2rem',
+          width: '380px',
+          height: '500px',
+          backgroundColor: 'white',
+          borderRadius: '12px',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+          display: 'flex',
+          flexDirection: 'column',
+          zIndex: 1000,
+          overflow: 'hidden'
+        }}>
+          {/* Chat Header */}
+          <div className="client-chat-header" style={{
+            padding: '1rem',
+            backgroundColor: '#8e44ad',
+            color: 'white',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.75rem'
+          }}>
+            <div className="client-chat-bot-icon" style={{
+              width: '40px',
+              height: '40px',
+              borderRadius: '50%',
+              backgroundColor: 'rgba(255,255,255,0.2)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <Bot size={24} />
+            </div>
+            <div>
+              <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 600 }}>Assistant Pharmacie</h3>
+              <p style={{ margin: 0, fontSize: '0.75rem', opacity: 0.9 }}>En ligne</p>
+            </div>
+          </div>
+
+          {/* Chat Messages */}
+          <div className="client-chat-messages" style={{
+            flex: 1,
+            overflowY: 'auto',
+            padding: '1rem',
+            backgroundColor: '#f8f9fa'
+          }}>
+            {messages.map((msg) => (
+              <div key={msg.id} style={{
+                display: 'flex',
+                justifyContent: msg.sender === 'user' ? 'flex-end' : 'flex-start',
+                marginBottom: '1rem'
+              }}>
+                <div style={{
+                  maxWidth: '75%',
+                  padding: '0.75rem',
+                  borderRadius: '12px',
+                  backgroundColor: msg.sender === 'user' ? '#8e44ad' : 'white',
+                  color: msg.sender === 'user' ? 'white' : '#1f2937',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                }}>
+                  <p style={{ margin: 0, fontSize: '0.875rem', lineHeight: '1.5' }}>{msg.text}</p>
+                  <span style={{
+                    display: 'block',
+                    marginTop: '0.25rem',
+                    fontSize: '0.7rem',
+                    opacity: 0.7
+                  }}>
+                    {msg.time}
+                  </span>
+                </div>
+              </div>
+            ))}
+            {isSendingMessage && (
+              <div style={{
+                display: 'flex',
+                justifyContent: 'flex-start',
+                marginBottom: '1rem'
+              }}>
+                <div style={{
+                  padding: '0.75rem',
+                  borderRadius: '12px',
+                  backgroundColor: 'white',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                }}>
+                  <p style={{ margin: 0, fontSize: '0.875rem' }}>
+                    <span style={{ animation: 'pulse 1.5s ease-in-out infinite' }}>●</span>
+                    <span style={{ animation: 'pulse 1.5s ease-in-out infinite', animationDelay: '0.2s' }}>●</span>
+                    <span style={{ animation: 'pulse 1.5s ease-in-out infinite', animationDelay: '0.4s' }}>●</span>
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Chat Input */}
+          <div style={{
+            padding: '1rem',
+            backgroundColor: 'white',
+            borderTop: '1px solid #e5e7eb'
+          }}>
+            <div style={{
+              display: 'flex',
+              gap: '0.5rem',
+              alignItems: 'center'
+            }}>
+              <input
+                type="text"
+                value={inputMessage}
+                onChange={(e) => setInputMessage(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && !isSendingMessage && handleSendMessage()}
+                placeholder="Tapez votre message..."
+                disabled={isSendingMessage}
+                style={{
+                  flex: 1,
+                  padding: '0.625rem 0.75rem',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '8px',
+                  fontSize: '0.875rem',
+                  outline: 'none',
+                  height: '40px'
+                }}
+              />
+              <button
+                onClick={handleSendMessage}
+                disabled={isSendingMessage || inputMessage.trim() === ''}
+                style={{
+                  padding: '0.5rem',
+                  backgroundColor: '#8e44ad',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  opacity: (isSendingMessage || inputMessage.trim() === '') ? 0.5 : 1,
+                  transition: 'opacity 0.2s',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  minWidth: '40px',
+                  height: '40px'
+                }}
+              >
+                <Send size={18} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

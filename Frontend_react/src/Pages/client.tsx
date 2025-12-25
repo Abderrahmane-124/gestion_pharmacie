@@ -1,10 +1,37 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, ShoppingCart, User, Bell, Package, Clock, MapPin, Phone, Mail, Menu, X, MessageCircle, Send, Bot, Store, Map } from 'lucide-react';
 import '../Styles/Client.css';
+import axios from 'axios';
 
 import pharmacyLogo from "../assets/preview.jpg"; // Assurez-vous que le chemin est correct
 import appLogo from "../assets/preview.jpg";
 import clientBg from "../assets/client.jpg";
+
+const API_URL = 'http://localhost:8080';
+
+// Types
+interface Medicament {
+  id: number;
+  nom: string;
+  prixVente: number;
+  quantiteStock: number;
+  categorie?: string;
+  description?: string;
+  utilisateur?: {
+    nom: string;
+    prenom: string;
+  };
+}
+
+interface Pharmacien {
+  id: number;
+  nom: string;
+  prenom: string;
+  email: string;
+  telephone?: string;
+  adresse?: string;
+  inpe?: string;
+}
 
 
 export default function ClientPage() {
@@ -18,9 +45,74 @@ export default function ClientPage() {
     { id: 1, text: "Bonjour ! Je suis votre assistant virtuel. Comment puis-je vous aider aujourd'hui ?", sender: 'bot', time: '10:30' }
   ]);
   const [inputMessage, setInputMessage] = useState('');
+  const [medications, setMedications] = useState<Medicament[]>([]);
+  const [pharmacies, setPharmacies] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isSendingMessage, setIsSendingMessage] = useState(false);
 
   const lastScrollY = useRef(0);
   const containerRef = useRef<HTMLDivElement | null>(null);
+
+  // Fetch medicaments from API
+  useEffect(() => {
+    const fetchMedicaments = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const token = localStorage.getItem('token');
+        const response = await axios.get(`${API_URL}/medicaments/en-vente`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        setMedications(response.data);
+      } catch (err: any) {
+        console.error('Erreur lors du chargement des médicaments:', err);
+        setError('Erreur lors du chargement des médicaments');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMedicaments();
+  }, []);
+
+  // Fetch pharmaciens from API
+  useEffect(() => {
+    const fetchPharmaciens = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const token = localStorage.getItem('token');
+        const response = await axios.get(`${API_URL}/api/utilisateurs/pharmaciens`, {
+          headers: token ? {
+            'Authorization': `Bearer ${token}`
+          } : {}
+        });
+        const pharmaciensData = response.data.map((pharmacien: Pharmacien, index: number) => ({
+          id: pharmacien.id,
+          name: `Pharmacie ${pharmacien.prenom} ${pharmacien.nom}`,
+          address: pharmacien.adresse || 'Adresse non disponible',
+          phone: pharmacien.telephone || 'Téléphone non disponible',
+          hours: '8h - 22h',
+          distance: `${(Math.random() * 5).toFixed(1)} km`,
+          rating: (4.5 + Math.random() * 0.5).toFixed(1),
+          image: ['🏥', '⚕️', '💊'][index % 3],
+          email: pharmacien.email,
+          inpe: pharmacien.inpe
+        }));
+        setPharmacies(pharmaciensData);
+      } catch (err: any) {
+        console.error('Erreur lors du chargement des pharmaciens:', err);
+        setError('Erreur lors du chargement des pharmaciens');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPharmaciens();
+  }, []);
 
   useEffect(() => {
     // initialize lastScrollY to current position to avoid jump
@@ -75,51 +167,9 @@ export default function ClientPage() {
     }
   }, []);
 
-  const medications = [
-    { id: 1, name: 'Paracétamol 500mg', price: 25, stock: 150, category: 'Analgésiques', image: '💊', pharmacy: 'Pharmacie Centrale' },
-    { id: 2, name: 'Ibuprofène 400mg', price: 35, stock: 80, category: 'Anti-inflammatoires', image: '💊', pharmacy: 'Pharmacie de la Gare' },
-    { id: 3, name: 'Amoxicilline 1g', price: 120, stock: 45, category: 'Antibiotiques', image: '💊', pharmacy: 'Pharmacie Centrale' },
-    { id: 4, name: 'Vitamine C 1000mg', price: 45, stock: 200, category: 'Vitamines', image: '🔶', pharmacy: 'Pharmacie du Coin' },
-    { id: 5, name: 'Aspirine 100mg', price: 18, stock: 120, category: 'Analgésiques', image: '💊', pharmacy: 'Pharmacie de la Gare' },
-    { id: 6, name: 'Oméprazole 20mg', price: 55, stock: 60, category: 'Gastro-intestinal', image: '💊', pharmacy: 'Pharmacie Centrale' }
-  ];
-
-  const pharmacies = [
-    { 
-      id: 1, 
-      name: 'Pharmacie Centrale', 
-      address: 'Boulevard Mohammed V, Casablanca',
-      phone: '+212 522-123456',
-      hours: '8h - 22h',
-      distance: '0.5 km',
-      rating: 4.8,
-      image: '🏥'
-    },
-    { 
-      id: 2, 
-      name: 'Pharmacie de la Gare', 
-      address: 'Avenue des FAR, Casablanca',
-      phone: '+212 522-234567',
-      hours: '24h/24',
-      distance: '1.2 km',
-      rating: 4.6,
-      image: '⚕️'
-    },
-    { 
-      id: 3, 
-      name: 'Pharmacie du Coin', 
-      address: 'Rue Oujda, Casablanca',
-      phone: '+212 522-345678',
-      hours: '9h - 21h',
-      distance: '2.0 km',
-      rating: 4.7,
-      image: '💊'
-    },
-  ];
-
   const filteredMeds = medications.filter(med =>
-    med.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    med.category.toLowerCase().includes(searchQuery.toLowerCase())
+    med.nom.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (med.categorie && med.categorie.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   const filteredPharmacies = pharmacies.filter(pharmacy =>
@@ -127,49 +177,72 @@ export default function ClientPage() {
     pharmacy.address.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleSendMessage = () => {
-    if (inputMessage.trim() === '') return;
+  const handleSendMessage = async () => {
+    if (inputMessage.trim() === '' || isSendingMessage) return;
 
+    const userMessageText = inputMessage;
     const newMessage = {
       id: messages.length + 1,
-      text: inputMessage,
+      text: userMessageText,
       sender: 'user',
       time: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
     };
 
     setMessages([...messages, newMessage]);
     setInputMessage('');
+    setIsSendingMessage(true);
 
-    // Simulation de réponse du bot
-    setTimeout(() => {
+    try {
+      const token = localStorage.getItem('token');
+      
+      // Call the RAG API
+      const response = await axios.post(`${API_URL}/api/rag/chat`, {
+        message: userMessageText,
+        max_new_tokens: 512,
+        temperature: 0.7,
+        top_p: 0.9
+      }, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      // Extract the AI response
+      const aiResponseText = response.data.answer || response.data.response || "Désolé, je n'ai pas pu générer une réponse.";
+      
       const botResponse = {
         id: messages.length + 2,
-        text: getBotResponse(inputMessage),
+        text: aiResponseText,
+        sender: 'bot',
+        time: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+      };
+      
+      setMessages(prev => [...prev, botResponse]);
+    } catch (error: any) {
+      console.error('Erreur lors de l\'envoi du message:', error);
+      
+      // Fallback to local response if API fails
+      const botResponse = {
+        id: messages.length + 2,
+        text: "Désolé, je rencontre des difficultés à me connecter au serveur. Veuillez réessayer plus tard.",
         sender: 'bot',
         time: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
       };
       setMessages(prev => [...prev, botResponse]);
-    }, 1000);
-  };
-
-  const getBotResponse = (message: string) => {
-    const msg = message.toLowerCase();
-    if (msg.includes('prix') || msg.includes('coût')) {
-      return "Les prix de nos médicaments varient selon le produit. Vous pouvez consulter notre catalogue pour voir les prix détaillés. Cherchez-vous un médicament en particulier ?";
-    } else if (msg.includes('stock') || msg.includes('disponible')) {
-      return "Pour vérifier la disponibilité d'un médicament, consultez notre section Médicaments. Le stock est mis à jour en temps réel. Quel médicament recherchez-vous ?";
-    } else if (msg.includes('pharmacie') || msg.includes('adresse')) {
-      return "Nous avons plusieurs pharmacies à Casablanca. Consultez l'onglet 'Pharmacies' pour voir les adresses, horaires et distances. Puis-je vous aider à trouver la plus proche ?";
-    } else if (msg.includes('horaire') || msg.includes('ouvert')) {
-      return "Nos pharmacies ont des horaires variables. La Pharmacie de la Gare est ouverte 24h/24. Consultez l'onglet Pharmacies pour plus de détails.";
-    } else if (msg.includes('commande') || msg.includes('commander')) {
-      return "Pour commander, ajoutez les médicaments à votre panier et cliquez sur 'Commander'. Vous pouvez suivre vos commandes dans l'onglet 'Mes Commandes'.";
-    } else if (msg.includes('bonjour') || msg.includes('salut')) {
-      return "Bonjour ! Comment puis-je vous aider aujourd'hui ? Je peux vous renseigner sur nos médicaments, pharmacies, prix et disponibilités.";
-    } else {
-      return "Je suis là pour vous aider ! Posez-moi des questions sur nos médicaments, pharmacies, prix ou disponibilités. Comment puis-je vous assister ?";
+    } finally {
+      setIsSendingMessage(false);
     }
   };
+
+  // Old local bot response logic (replaced by AI API)
+  // const getBotResponse = (message: string) => {
+  //   const msg = message.toLowerCase();
+  //   if (msg.includes('prix') || msg.includes('coût')) {
+  //     return "Les prix de nos médicaments varient selon le produit...";
+  //   }
+  //   ...
+  // };
 
   return (
     <div
@@ -265,38 +338,66 @@ export default function ClientPage() {
         {/* Médicaments Tab */}
         {activeTab === 'medicaments' && (
           <div className="client-meds-grid">
-            {filteredMeds.map((med) => (
-              <div key={med.id} className="client-med-card">
-                <div className="client-med-card-content">
-                  <div className="client-med-card-header">
-                    <div className="client-med-image">{med.image}</div>
-                    <span className="client-med-category">
-                      {med.category}
-                    </span>
-                  </div>
-                  <h3 className="client-med-name">{med.name}</h3>
-                  <div className="client-med-pharmacy">
-                    <Store size={16} />
-                    <span>{med.pharmacy}</span>
-                  </div>
-                  <div className="client-med-footer">
-                    <span className="client-med-price">{med.price} DH</span>
-                  </div>
-                  <button className="client-med-button">
-                    <ShoppingCart size={18} />
-                    <span>Voir les détails</span>
-                  </button>
-                </div>
+            {loading ? (
+              <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '2rem', color: 'white' }}>
+                <p>Chargement des médicaments...</p>
               </div>
-            ))}
+            ) : error ? (
+              <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '2rem', color: '#ef4444' }}>
+                <p>{error}</p>
+              </div>
+            ) : filteredMeds.length === 0 ? (
+              <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '2rem', color: 'white' }}>
+                <p>Aucun médicament disponible</p>
+              </div>
+            ) : (
+              filteredMeds.map((med) => (
+                <div key={med.id} className="client-med-card">
+                  <div className="client-med-card-content">
+                    <div className="client-med-card-header">
+                      <div className="client-med-image">💊</div>
+                      <span className="client-med-category">
+                        {med.categorie || 'Médicament'}
+                      </span>
+                    </div>
+                    <h3 className="client-med-name">{med.nom}</h3>
+                    <div className="client-med-pharmacy">
+                      <Store size={16} />
+                      <span>{med.utilisateur ? `${med.utilisateur.prenom} ${med.utilisateur.nom}` : 'Pharmacie'}</span>
+                    </div>
+                    <div className="client-med-footer">
+                      <span className="client-med-price">{med.prixVente} DH</span>
+                      <span style={{ fontSize: '0.875rem', color: '#9ca3af' }}>Stock: {med.quantiteStock}</span>
+                    </div>
+                    <button className="client-med-button">
+                      <ShoppingCart size={18} />
+                      <span>Voir les détails</span>
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         )}
 
         {/* Pharmacies Tab */}
         {activeTab === 'pharmacies' && (
           <div className="client-pharmacies-grid">
-            {filteredPharmacies.map((pharmacy) => (
-              <div key={pharmacy.id} className="client-pharmacy-card">
+            {loading ? (
+              <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '2rem', color: 'white' }}>
+                <p>Chargement des pharmacies...</p>
+              </div>
+            ) : error ? (
+              <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '2rem', color: '#ef4444' }}>
+                <p>{error}</p>
+              </div>
+            ) : filteredPharmacies.length === 0 ? (
+              <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: '2rem', color: 'white' }}>
+                <p>Aucune pharmacie disponible</p>
+              </div>
+            ) : (
+              filteredPharmacies.map((pharmacy) => (
+                <div key={pharmacy.id} className="client-pharmacy-card">
                 <div className="client-pharmacy-card-content">
                   <div className="client-pharmacy-card-header">
                     <div className="client-pharmacy-info">
@@ -341,7 +442,8 @@ export default function ClientPage() {
                   </div>
                 </div>
               </div>
-            ))}
+              ))
+            )}
           </div>
         )}
       </div>
@@ -380,6 +482,17 @@ export default function ClientPage() {
                 </div>
               </div>
             ))}
+            {isSendingMessage && (
+              <div className="client-chat-message client-chat-message-bot">
+                <div className="client-chat-bubble client-chat-bubble-bot">
+                  <p className="client-chat-text">
+                    <span style={{ animation: 'pulse 1.5s ease-in-out infinite' }}>●</span>
+                    <span style={{ animation: 'pulse 1.5s ease-in-out infinite', animationDelay: '0.2s' }}>●</span>
+                    <span style={{ animation: 'pulse 1.5s ease-in-out infinite', animationDelay: '0.4s' }}>●</span>
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Chat Input */}
@@ -389,13 +502,16 @@ export default function ClientPage() {
                 type="text"
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                onKeyPress={(e) => e.key === 'Enter' && !isSendingMessage && handleSendMessage()}
                 placeholder="Tapez votre message..."
                 className="client-chat-input-field"
+                disabled={isSendingMessage}
               />
               <button
                 onClick={handleSendMessage}
                 className="client-chat-send-button"
+                disabled={isSendingMessage || inputMessage.trim() === ''}
+                style={{ opacity: (isSendingMessage || inputMessage.trim() === '') ? 0.5 : 1 }}
               >
                 <Send size={20} />
               </button>

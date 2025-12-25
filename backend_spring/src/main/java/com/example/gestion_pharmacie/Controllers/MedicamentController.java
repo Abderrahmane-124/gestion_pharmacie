@@ -93,7 +93,7 @@ public class MedicamentController {
         return ResponseEntity.ok(medicamentService.toggleEnVente(id, enVente));
     }
 
-    @PreAuthorize("hasAnyRole('PHARMACIEN', 'FOURNISSEUR')")
+    @PreAuthorize("hasAnyRole('PHARMACIEN', 'FOURNISSEUR', 'CLIENT')")
     @GetMapping("/en-vente")
     public ResponseEntity<List<Medicament>> getMedicamentsEnVente() {
         List<Medicament> medicamentsEnVente = medicamentService.getMedicamentsEnVente();
