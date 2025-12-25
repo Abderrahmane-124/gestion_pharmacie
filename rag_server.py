@@ -34,7 +34,7 @@ CHUNK_SIZE = 500                               # Maximum characters per text chu
 
 # LLaMA Model Configuration (from your original code)
 MODEL_NAME = "meta-llama/Llama-3.2-3B-Instruct"
-TOKEN = "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"
+TOKEN = "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"
 
 # ============================================================================
 # INITIALIZE MODELS AND SERVICES
