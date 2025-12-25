@@ -360,45 +360,57 @@ def chat(req ChatRequest)
     
 
     context_used = []
-    sources List[Dict] = []
-    answer_source = general_knowledge
+    sources: List[Dict] = []
+    answer_source = "general_knowledge"
 
     has_external = bool(req.external_context)
-    if has_external
-        print(f[chat] Received external_context from Spring Boot with {len(req.external_context)} items)
+    if has_external:
+        print(f"[chat] Received external_context from Spring Boot with {len(req.external_context)} items")
 
-    # if external context provided by Spring, use it instead of retrieval
-    if req.external_context
-        context_used = req.external_context
-        sources = [{source springboot, row_index None, similarity_score None, columns []} for _ in context_used]
-        answer_source = springboot
-        print(f[source] Using springboot context items={len(context_used)})
-    elif req.use_rag
-        try
+    # ------------------------------------------------------------------------
+    # COMBINED CONTEXT: Use BOTH external context AND S3 retrieval
+    # ------------------------------------------------------------------------
+    
+    # Step 1: Add external context from Spring Boot (real-time SQL data)
+    if req.external_context:
+        context_used.extend(req.external_context)
+        sources.extend([{"source": "springboot", "row_index": None, "similarity_score": None, "columns": []} for _ in req.external_context])
+        answer_source = "springboot"
+        print(f"[source] Added springboot context: items={len(req.external_context)}")
+    
+    # Step 2: ALSO add S3 retrieval for additional medication info (always if use_rag is True)
+    if req.use_rag:
+        try:
             # Retrieve top-k most relevant chunks for the query
             retrieved_chunks = retrieve_relevant_chunks(req.prompt, top_k=TOP_K_RESULTS)
 
             # Extract context and metadata
-            for text, metadata, score in retrieved_chunks
+            for text, metadata, score in retrieved_chunks:
                 context_used.append(text)
                 src_label = 's3' if metadata.get('source') == 'csv' else metadata.get('source') or 'unknown'
                 sources.append({
-                    'source' src_label,
-                    'row_index' metadata.get('row_index'),
-                    'similarity_score' score,
-                    'columns' metadata.get('columns', [])
+                    "source": src_label,
+                    "row_index": metadata.get('row_index'),
+                    "similarity_score": score,
+                    "columns": metadata.get('columns', [])
                 })
-            if context_used
-                answer_source = s3
-                print(f[source] Using s3 context k={len(context_used)})
-            else
-                print([source] No context retrieved from s3; will fall back to general_knowledge)
-        except Exception as e
-            print(fError during retrieval {str(e)})
-            context_used = []
-            sources = []
-            answer_source = general_knowledge
-            print([source] Retrieval error; using general_knowledge)
+            
+            # Update answer_source to reflect combined sources
+            if has_external and retrieved_chunks:
+                answer_source = "springboot+s3"
+                print(f"[source] Added s3 context: k={len(retrieved_chunks)} → Combined source: springboot+s3")
+            elif retrieved_chunks:
+                answer_source = "s3"
+                print(f"[source] Using s3 context only: k={len(retrieved_chunks)}")
+            
+        except Exception as e:
+            print(f"Error during S3 retrieval: {str(e)}")
+            # Keep external context if available, just skip S3
+            if not has_external:
+                context_used = []
+                sources = []
+                answer_source = "general_knowledge"
+                print("[source] Retrieval error and no external context; using general_knowledge")
 
     # ------------------------------------------------------------------------
     # AUGMENTATION PHASE Combine retrieved context with user prompt
@@ -535,8 +547,16 @@ def get_knowledge_base_stats()
 # STARTUP EVENT
 # ============================================================================
 
-@app.on_event(startup)
-async def startup_event()
-    Run initialization tasks on application startup.
-    print(Application started successfully!)
-    print(fKnowledge base contains {len(knowledge_chunks)} chunks)
+@app.on_event("startup")
+async def startup_event():
+    """Run initialization tasks on application startup."""
+    print("Application started successfully!")
+    print(f"Knowledge base contains {len(knowledge_chunks)} chunks")
+
+# ============================================================================
+# MAIN ENTRY POINT
+# ============================================================================
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)

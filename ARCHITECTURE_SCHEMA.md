@@ -44,14 +44,15 @@ Instead of generic retrieval, the system builds a highly specific context based 
 
 ## Où est le Machine Learning ?
 
-Le ML est **entièrement dans `rag_server.py`** (service Python). Trois composants sont utilisés, mais **pas tous pour chaque source de données** :
+Le ML est **entièrement dans `rag_server.py`** (service Python). Trois composants sont utilisés :
 
 ### ML par Source de Données
 
 | Source | Sentence Transformers | FAISS | LLaMA 3.2 |
 |--------|:---------------------:|:-----:|:---------:|
-| **S3 (CSV)** | ✅ Embeddings | ✅ Retrieval | ✅ Génération |
-| **Spring Boot** | ❌ Bypassé | ❌ Bypassé | ✅ Génération |
+| **S3 seul** | ✅ Embeddings | ✅ Retrieval | ✅ Génération |
+| **Spring Boot seul** | ❌ Non utilisé | ❌ Non utilisé | ✅ Génération |
+| **Spring Boot + S3** | ✅ Embeddings | ✅ Retrieval | ✅ Génération |
 
 ---
 
@@ -65,13 +66,16 @@ Question → [Sentence Transformer] → [FAISS Search] → Top-K Chunks → [LLa
 
 ---
 
-### Flux Spring Boot (Génération uniquement)
+### Flux Combiné Spring Boot + S3 (Recommandé)
 ```
-Question + Contexte SQL → [LLaMA] → Réponse
+Question + Contexte SQL → [+ FAISS Search] → Contexte Enrichi → [LLaMA] → Réponse
 ```
-- Le backend envoie `external_context` (données SQL pré-formatées)
-- **Embeddings/FAISS sont bypassés** (pas de recherche nécessaire)
-- **LLaMA génère** la réponse à partir du contexte fourni
+- **Spring Boot** : Fournit les données temps réel (stock, commandes, alertes)
+- **S3/FAISS** : Ajoute les informations médicales détaillées (indications, posologie)
+- **LLaMA** : Génère une réponse complète avec les deux sources
+
+> [!TIP]
+> Ce flux combiné permet de répondre à des questions comme : *"Quels médicaments ai-je en stock pour le diabète et comment les utiliser ?"*
 
 ---
 
@@ -80,8 +84,8 @@ Question + Contexte SQL → [LLaMA] → Réponse
 | Composant | Modèle | Rôle |
 |-----------|--------|------|
 | **LLM** | `meta-llama/Llama-3.2-3B-Instruct` | Génération de texte (toujours actif) |
-| **Embeddings** | `sentence-transformers/all-MiniLM-L6-v2` | Vectorisation (S3 uniquement) |
-| **Vector Search** | FAISS (`IndexFlatL2`) | Recherche par similarité (S3 uniquement) |
+| **Embeddings** | `sentence-transformers/all-MiniLM-L6-v2` | Vectorisation (S3) |
+| **Vector Search** | FAISS (`IndexFlatL2`) | Recherche par similarité (S3) |
 
 > [!NOTE]
 > Le backend Spring Boot ne contient **aucun code ML**. Il collecte les données SQL et les transmet au service Python.
@@ -156,21 +160,38 @@ Le système RAG peut répondre aux questions basées sur le fichier CSV `medicam
 
 ---
 
-### ⚠️ Questions avec Réponses Limitées
+### 📦 Questions via Backend Spring Boot (Données SQL)
 
-Ces questions en langage courant nécessitent une **traduction** vers les termes médicaux :
+Ces questions utilisent les données en temps réel de la base de données, envoyées via `external_context` :
 
-| Question grand public | Terme médical correspondant |
-|-----------------------|-----------------------------|
-| "J'ai mal à la tête" | Antalgique, Paracétamol, Céphalées |
-| "Mon enfant a de la fièvre" | Antipyrétique, Paracétamol |
-| "J'ai le nez bouché" | Décongestionnant, Rhinite |
-| "Je tousse beaucoup" | Antitussif, Dextrométhorphane |
-| "J'ai mal au ventre" | Antispasmodique, Antiacide |
-| "Je n'arrive pas à dormir" | Hypnotique, Troubles du sommeil |
+#### Pour les Pharmaciens
+| Question exemple | Données utilisées | Intent détecté |
+|------------------|-------------------|----------------|
+| "Quels médicaments ai-je en stock ?" | `medicaments` | `asksMeds` |
+| "Combien de médicaments ai-je ?" | `stats.totalMedicaments` | `asksStats` |
+| "Montre mes commandes récentes" | `commandes` | `asksCommandes` |
+| "Quelles sont mes alertes ?" | `alertes` | `asksAlertes` |
+| "État de mes ventes aujourd'hui" | `paniers` | `asksPaniers` |
+| "Statistiques de ma pharmacie" | `stats` | `asksStats` |
+| "Quels médicaments expirent bientôt ?" | `medicaments.date_expiration` | `asksMeds` |
 
-> [!TIP]
-> Le prompt système de LLaMA a été configuré pour traduire automatiquement ces termes courants vers les termes médicaux du CSV.
+#### Pour les Fournisseurs
+| Question exemple | Données utilisées | Intent détecté |
+|------------------|-------------------|----------------|
+| "Quels médicaments je fournis ?" | `medicaments` | `asksMeds` |
+| "Liste de mes commandes" | `commandes` | `asksCommandes` |
+| "Quels pharmaciens travaillent avec moi ?" | `pharmaciens` | `asksPharmaciens` |
+| "Alertes sur mes produits" | `alertes` | `asksAlertes` |
+| "Combien de commandes ai-je reçu ?" | `stats.totalCommandes` | `asksStats` |
+
+#### Pour les Utilisateurs Génériques
+| Question exemple | Données utilisées |
+|------------------|-------------------|
+| "Quels médicaments sont en vente ?" | `medicaments (en_vente=true)` |
+| "Combien de médicaments disponibles ?" | `stats.totalMedicamentsEnVente` |
+
+> [!IMPORTANT]
+> Ces questions nécessitent une **authentification**. Le système détecte automatiquement le rôle (Pharmacien, Fournisseur, Utilisateur) et renvoie les données appropriées.
 
 ---
 
