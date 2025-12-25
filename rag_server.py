@@ -2,6 +2,8 @@
 # IMPORTS
 # ============================================================================
 import os
+from dotenv import load_dotenv
+load_dotenv()  # Load variables from .env file
 
 import boto3                                    # AWS SDK for Python - to access S3
 import pandas as pd                             # Data manipulation library for CSV processing
