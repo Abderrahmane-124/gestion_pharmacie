@@ -20,27 +20,27 @@ import torch
 # ============================================================================
 
 # AWS S3 Configuration
-S3_BUCKET_NAME = rag-bucket-llm            # Name of your S3 bucket
-S3_CSV_FILE_KEY = medicaments_maroc.csv    # Path to CSV file in S3 bucket
-AWS_REGION = eu-west-3                       # AWS region where bucket is located
+S3_BUCKET_NAME = "rag-bucket-llm"            # Name of your S3 bucket
+S3_CSV_FILE_KEY = "medicaments_maroc.csv"    # Path to CSV file in S3 bucket
+AWS_REGION = "eu-west-3"                       # AWS region where bucket is located
 
 # Embedding Model Configuration
 # This model converts text into numerical vectors (embeddings) for similarity search
-EMBEDDING_MODEL_NAME = sentence-transformersall-MiniLM-L6-v2  # Lightweight, fast model
+EMBEDDING_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"  # Lightweight, fast model
 
 # RAG Configuration
 TOP_K_RESULTS = 3                              # Number of most relevant chunks to retrieve
 CHUNK_SIZE = 500                               # Maximum characters per text chunk
 
 # LLaMA Model Configuration (from your original code)
-MODEL_NAME = meta-llamaLlama-3.2-3B-Instruct
-TOKEN = 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
+MODEL_NAME = "meta-llama/Llama-3.2-3B-Instruct"
+TOKEN = "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"
 
 # ============================================================================
 # INITIALIZE MODELS AND SERVICES
 # ============================================================================
 
-print(Initializing services...)
+print("Initializing services...")
 
 # Initialize S3 client to interact with AWS S3
 # boto3 handles authentication via AWS credentials (IAM role, config file, or env vars)
@@ -48,22 +48,22 @@ s3_client = boto3.client('s3', region_name=AWS_REGION)
 
 # Initialize embedding model for converting text to vector representations
 # This model is much smaller than LLaMA and specializes in semantic similarity
-print(fLoading embedding model {EMBEDDING_MODEL_NAME}...)
+print(f"Loading embedding model {EMBEDDING_MODEL_NAME}...")
 embedding_model = SentenceTransformer(EMBEDDING_MODEL_NAME)
 
 # Initialize LLaMA tokenizer and model (from your original code)
-print(fLoading {MODEL_NAME} with 4-bit quantization...)
+print(f"Loading {MODEL_NAME} with 4-bit quantization...")
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, token=TOKEN)
 model = AutoModelForCausalLM.from_pretrained(
     MODEL_NAME,
     use_auth_token=TOKEN,
-    device_map=auto,
+    device_map="auto",
 #    load_in_4bit=True,
     torch_dtype=torch.bfloat16,
 )
 
 # Initialize FastAPI application
-app = FastAPI(title=LLaMA RAG Chat API with S3 Integration)
+app = FastAPI(title="LLaMA RAG Chat API with S3 Integration")
 
 # ============================================================================
 # GLOBAL VARIABLES FOR RAG SYSTEM
@@ -78,24 +78,24 @@ chunk_metadata = []         # Metadata for each chunk (row info, source, etc.)
 # DATA LOADING AND PREPROCESSING FUNCTIONS
 # ============================================================================
 
-def load_csv_from_s3(bucket str, key str) - pd.DataFrame
-    
+def load_csv_from_s3(bucket: str, key: str) -> pd.DataFrame:
+    """
     Load CSV file from S3 bucket and convert to pandas DataFrame.
 
-    Process
+    Process:
     1. Download CSV file from S3 as bytes
     2. Decode bytes to string
     3. Parse string as CSV into DataFrame
 
-    Args
-        bucket S3 bucket name
-        key Path to CSV file in bucket
+    Args:
+        bucket: S3 bucket name
+        key: Path to CSV file in bucket
 
-    Returns
+    Returns:
         DataFrame containing CSV data
-    
-    try
-        print(fDownloading CSV from s3{bucket}{key}...)
+    """
+    try:
+        print(f"Downloading CSV from s3://{bucket}/{key}...")
 
         # Get the CSV file object from S3
         response = s3_client.get_object(Bucket=bucket, Key=key)
@@ -107,101 +107,101 @@ def load_csv_from_s3(bucket str, key str) - pd.DataFrame
         # StringIO treats the string as a file-like object
         df = pd.read_csv(StringIO(csv_content))
 
-        print(fSuccessfully loaded CSV with {len(df)} rows and {len(df.columns)} columns)
-        print(fColumns {list(df.columns)})
+        print(f"Successfully loaded CSV with {len(df)} rows and {len(df.columns)} columns")
+        print(f"Columns: {list(df.columns)}")
 
         return df
 
-    except Exception as e
-        print(fError loading CSV from S3 {str(e)})
+    except Exception as e:
+        print(f"Error loading CSV from S3: {str(e)}")
         raise
 
-def preprocess_dataframe(df pd.DataFrame) - List[Dict]
-    
+def preprocess_dataframe(df: pd.DataFrame) -> List[Dict]:
+    """
     Convert DataFrame rows into text chunks suitable for retrieval.
 
-    Data Treatment Process
+    Data Treatment Process:
     1. Handle missing values (NaN) by replacing with empty strings
     2. Convert each row to a readable text format
     3. Create metadata for tracking source of information
     4. Split long texts into smaller chunks if needed
 
-    Args
-        df Input DataFrame from CSV
+    Args:
+        df: Input DataFrame from CSV
 
-    Returns
+    Returns:
         List of dictionaries with 'text' and 'metadata' keys
-    
+    """
     chunks = []
 
     # Iterate through each row in the DataFrame
-    for idx, row in df.iterrows()
+    for idx, row in df.iterrows():
         # Convert row to dictionary and handle NaN values
         # fillna('') replaces any missing values with empty string
         row_dict = row.to_dict()
 
         # Create a human-readable text representation of the row
-        # This combines all columnvalue pairs into a single string
+        # This combines all column:value pairs into a single string
         text_parts = []
-        for column, value in row_dict.items()
+        for column, value in row_dict.items():
             # Skip empty values to keep text concise
-            if pd.notna(value) and str(value).strip()
-                text_parts.append(f{column} {value})
+            if pd.notna(value) and str(value).strip():
+                text_parts.append(f"{column}: {value}")
 
         # Join all parts with newlines for readability
-        full_text = n.join(text_parts)
+        full_text = "\n".join(text_parts)
 
         # Split into chunks if text is too long
         # This ensures each chunk fits within context limits
-        if len(full_text)  CHUNK_SIZE
+        if len(full_text) > CHUNK_SIZE:
             # Split long text into multiple chunks
-            for i in range(0, len(full_text), CHUNK_SIZE)
-                chunk_text = full_text[ii + CHUNK_SIZE]
+            for i in range(0, len(full_text), CHUNK_SIZE):
+                chunk_text = full_text[i:i + CHUNK_SIZE]
                 chunks.append({
-                    'text' chunk_text,
-                    'metadata' {
-                        'row_index' idx,
-                        'chunk_index' i  CHUNK_SIZE,
-                        'source' 'csv',
-                        'columns' list(row_dict.keys())
+                    'text': chunk_text,
+                    'metadata': {
+                        'row_index': idx,
+                        'chunk_index': i // CHUNK_SIZE,
+                        'source': 'csv',
+                        'columns': list(row_dict.keys())
                     }
                 })
-        else
+        else:
             # Add entire row as single chunk
             chunks.append({
-                'text' full_text,
-                'metadata' {
-                    'row_index' idx,
-                    'chunk_index' 0,
-                    'source' 'csv',
-                    'columns' list(row_dict.keys())
+                'text': full_text,
+                'metadata': {
+                    'row_index': idx,
+                    'chunk_index': 0,
+                    'source': 'csv',
+                    'columns': list(row_dict.keys())
                 }
             })
 
-    print(fCreated {len(chunks)} text chunks from DataFrame)
+    print(f"Created {len(chunks)} text chunks from DataFrame")
     return chunks
 
-def create_faiss_index(chunks List[Dict]) - Tuple[faiss.IndexFlatL2, List[str], List[Dict]]
-    
+def create_faiss_index(chunks: List[Dict]) -> Tuple[faiss.IndexFlatL2, List[str], List[Dict]]:
+    """
     Create FAISS index for efficient similarity search.
 
-    Embedding Process
+    Embedding Process:
     1. Extract text from each chunk
     2. Convert text to embeddings (numerical vectors) using sentence transformer
     3. Create FAISS index to enable fast similarity search
     4. Add all embeddings to the index
 
-    How embeddings work
+    How embeddings work:
     - Similar texts have similar embeddings (vectors close in space)
     - FAISS can quickly find nearest neighbors (most similar texts)
 
-    Args
-        chunks List of text chunks with metadata
+    Args:
+        chunks: List of text chunks with metadata
 
-    Returns
+    Returns:
         Tuple of (FAISS index, list of texts, list of metadata)
-    
-    print(Creating embeddings and FAISS index...)
+    """
+    print("Creating embeddings and FAISS index...")
 
     # Extract just the text from each chunk
     texts = [chunk['text'] for chunk in chunks]
@@ -227,31 +227,31 @@ def create_faiss_index(chunks List[Dict]) - Tuple[faiss.IndexFlatL2, List[str], 
     # FAISS will use these to find similar vectors quickly
     index.add(embeddings.astype('float32'))
 
-    print(fFAISS index created with {index.ntotal} vectors of dimension {dimension})
+    print(f"FAISS index created with {index.ntotal} vectors of dimension {dimension}")
 
     return index, texts, metadata
 
-def retrieve_relevant_chunks(query str, top_k int = TOP_K_RESULTS) - List[Tuple[str, Dict, float]]
-    
+def retrieve_relevant_chunks(query: str, top_k: int = TOP_K_RESULTS) -> List[Tuple[str, Dict, float]]:
+    """
     Retrieve most relevant text chunks for a given query.
 
-    Retrieval Process
+    Retrieval Process:
     1. Convert query to embedding (same vector space as knowledge base)
     2. Use FAISS to find k nearest neighbor embeddings
     3. Return corresponding text chunks with similarity scores
 
-    Args
-        query User's question or search query
-        top_k Number of most relevant chunks to return
+    Args:
+        query: User's question or search query
+        top_k: Number of most relevant chunks to return
 
-    Returns
+    Returns:
         List of tuples (text, metadata, similarity_score)
-    
+    """
     global faiss_index, knowledge_chunks, chunk_metadata
 
     # Check if index is initialized
-    if faiss_index is None
-        raise ValueError(FAISS index not initialized. Call initialize_rag_system() first.)
+    if faiss_index is None:
+        raise ValueError("FAISS index not initialized. Call initialize_rag_system() first.")
 
     # Convert query to embedding vector
     query_embedding = embedding_model.encode(
@@ -269,7 +269,7 @@ def retrieve_relevant_chunks(query str, top_k int = TOP_K_RESULTS) - List[Tuple[
 
     # Collect retrieved chunks with their metadata and scores
     results = []
-    for distance, idx in zip(distances[0], indices[0])
+    for distance, idx in zip(distances[0], indices[0]):
         results.append((
             knowledge_chunks[idx],           # The actual text
             chunk_metadata[idx],             # Metadata (row info, etc.)
@@ -282,11 +282,11 @@ def retrieve_relevant_chunks(query str, top_k int = TOP_K_RESULTS) - List[Tuple[
 # RAG SYSTEM INITIALIZATION
 # ============================================================================
 
-def initialize_rag_system()
-    
+def initialize_rag_system():
+    """
     Initialize the RAG system by loading data and creating search index.
 
-    Complete Pipeline
+    Complete Pipeline:
     1. Load CSV from S3
     2. Preprocess into text chunks
     3. Generate embeddings
@@ -294,25 +294,25 @@ def initialize_rag_system()
     5. Store in global variables for fast access
 
     This runs once at startup to prepare the knowledge base.
-    
+    """
     global faiss_index, knowledge_chunks, chunk_metadata
 
-    print(n + =70)
-    print(INITIALIZING RAG SYSTEM)
-    print(=70)
+    print("\n" + "="*70)
+    print("INITIALIZING RAG SYSTEM")
+    print("="*70)
 
-    # Step 1 Load CSV from S3
+    # Step 1: Load CSV from S3
     df = load_csv_from_s3(S3_BUCKET_NAME, S3_CSV_FILE_KEY)
 
-    # Step 2 Preprocess DataFrame into chunks
+    # Step 2: Preprocess DataFrame into chunks
     chunks = preprocess_dataframe(df)
 
-    # Step 3 Create FAISS index and get embeddings
+    # Step 3: Create FAISS index and get embeddings
     faiss_index, knowledge_chunks, chunk_metadata = create_faiss_index(chunks)
 
-    print(=70)
-    print(RAG SYSTEM INITIALIZED SUCCESSFULLY)
-    print(=70 + n)
+    print("="*70)
+    print("RAG SYSTEM INITIALIZED SUCCESSFULLY")
+    print("="*70 + "\n")
 
 # Initialize RAG system on startup
 initialize_rag_system()
@@ -321,43 +321,43 @@ initialize_rag_system()
 # PYDANTIC MODELS FOR API
 # ============================================================================
 
-class ChatRequest(BaseModel)
-    Request model for chat endpoint.
-    prompt str                         # User's question
-    max_new_tokens int = 512          # Max tokens to generate
-    temperature float = 0.7           # Sampling temperature
-    top_p float = 0.9                 # Nucleus sampling threshold
-    use_rag bool = True               # Whether to use RAG (can disable for comparison)
-    external_context List[str]  None = None  # Optional externally provided curated chunks
+class ChatRequest(BaseModel):
+    """Request model for chat endpoint."""
+    prompt: str                         # User's question
+    max_new_tokens: int = 512          # Max tokens to generate
+    temperature: float = 0.7           # Sampling temperature
+    top_p: float = 0.9                 # Nucleus sampling threshold
+    use_rag: bool = True               # Whether to use RAG (can disable for comparison)
+    external_context: List[str] | None = None  # Optional externally provided curated chunks
 
-class RAGResponse(BaseModel)
-    Response model including RAG context.
-    response str                       # Model's answer
-    answer_source str                 # springboot  s3  general_knowledge
-    context_used List[str]            # Retrieved chunks used
-    sources List[Dict]                # Metadata of sources
+class RAGResponse(BaseModel):
+    """Response model including RAG context."""
+    response: str                       # Model's answer
+    answer_source: str                 # springboot | s3 | general_knowledge
+    context_used: List[str]            # Retrieved chunks used
+    sources: List[Dict]                # Metadata of sources
 
 # ============================================================================
 # CHAT ENDPOINT WITH RAG
 # ============================================================================
 
-@app.post(chat, response_model=RAGResponse)
-def chat(req ChatRequest)
-    
+@app.post("/chat", response_model=RAGResponse)
+def chat(req: ChatRequest):
+    """
     Chat endpoint with RAG integration.
 
-    RAG Flow
+    RAG Flow:
     1. Retrieve relevant context from knowledge base
     2. Inject context into prompt
     3. Generate response using LLaMA with enriched context
     4. Return response with sources
 
-    Args
-        req ChatRequest with user prompt and parameters
+    Args:
+        req: ChatRequest with user prompt and parameters
 
-    Returns
+    Returns:
         RAGResponse with answer and context sources
-    
+    """
 
     context_used = []
     sources: List[Dict] = []
@@ -413,14 +413,14 @@ def chat(req ChatRequest)
                 print("[source] Retrieval error and no external context; using general_knowledge")
 
     # ------------------------------------------------------------------------
-    # AUGMENTATION PHASE Combine retrieved context with user prompt
+    # AUGMENTATION PHASE: Combine retrieved context with user prompt
     # ------------------------------------------------------------------------
 
     # Build context section from retrieved chunks
-    if context_used
+    if context_used:
         # Format retrieved information into context block
-        context_block = nn.join([
-            f[Context {i+1}]n{chunk}
+        context_block = "\n\n".join([
+            f"[Context {i+1}]\n{chunk}"
             for i, chunk in enumerate(context_used)
         ])
 
@@ -450,41 +450,41 @@ RESPONSE GUIDELINES:
 4. If multiple options exist, list 2-3 alternatives
 5. ALWAYS end with: "⚠️ Consultez un médecin ou pharmacien avant toute prise de médicament."
 
-Use the provided context to answer accurately. If no relevant medication is found, say so clearly.""" 
+Use the provided context to answer accurately. If no relevant medication is found, say so clearly."""
 
         # Construct augmented prompt with context
-        user_message = fContext from knowledge base
+        user_message = f"""Context from knowledge base:
 {context_block}
 
-User question {req.prompt}
+User question: {req.prompt}
 
-Please answer based on the context provided above.
+Please answer based on the context provided above."""
 
-    else
+    else:
         # No RAG - use original system message
-        system_message = You are a cat that only says miaw.
+        system_message = "You are a cat that only says miaw."
         user_message = req.prompt
 
     # ------------------------------------------------------------------------
-    # GENERATION PHASE Format prompt for LLaMA
+    # GENERATION PHASE: Format prompt for LLaMA
     # ------------------------------------------------------------------------
 
     # Format according to LLaMA 3.2 Instruct template
-    formatted_prompt = fbegin_of_textstart_header_idsystemend_header_id
-{system_message}eot_idstart_header_iduserend_header_id
-{user_message}eot_idstart_header_idassistantend_header_id
-
+    formatted_prompt = f"""<|begin_of_text|><|start_header_id|>system<|end_header_id|>
+{system_message}<|eot_id|><|start_header_id|>user<|end_header_id|>
+{user_message}<|eot_id|><|start_header_id|>assistant<|end_header_id|>
+"""
 
     # Tokenize the formatted prompt
     inputs = tokenizer(
         formatted_prompt,
-        return_tensors=pt,
+        return_tensors="pt",
         add_special_tokens=False
     ).to(model.device)
 
     # Generate response using LLaMA model
     outputs = model.generate(
-        inputs,
+        **inputs,
         max_new_tokens=req.max_new_tokens,
         temperature=req.temperature,
         top_p=req.top_p,
@@ -497,18 +497,18 @@ Please answer based on the context provided above.
 
     # Extract only the assistant's new response
     prompt_length = len(tokenizer.decode(inputs['input_ids'][0], skip_special_tokens=True))
-    assistant_reply = full_text[prompt_length].strip()
+    assistant_reply = full_text[prompt_length:].strip()
 
     # ------------------------------------------------------------------------
     # RETURN RESPONSE WITH SOURCES
     # ------------------------------------------------------------------------
 
-    if not sources
-        sources = [{source general_knowledge}]
-        answer_source = general_knowledge
-        print([source] No context used; answer_source=general_knowledge)
+    if not sources:
+        sources = [{"source": "general_knowledge"}]
+        answer_source = "general_knowledge"
+        print("[source] No context used; answer_source=general_knowledge")
 
-    print(f[chat] Completed; answer_source={answer_source}; context_items={len(context_used)})
+    print(f"[chat] Completed; answer_source={answer_source}; context_items={len(context_used)}")
     return RAGResponse(
         response=assistant_reply,
         context_used=context_used,
@@ -520,27 +520,27 @@ Please answer based on the context provided above.
 # ADDITIONAL ENDPOINTS
 # ============================================================================
 
-@app.post(reload-knowledge-base)
-def reload_knowledge_base()
-    
+@app.post("/reload-knowledge-base")
+def reload_knowledge_base():
+    """
     Endpoint to reload the knowledge base from S3.
     Useful when CSV file is updated.
-    
-    try
+    """
+    try:
         initialize_rag_system()
-        return {status success, message Knowledge base reloaded successfully}
-    except Exception as e
+        return {"status": "success", "message": "Knowledge base reloaded successfully"}
+    except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get(knowledge-base-stats)
-def get_knowledge_base_stats()
-    
+@app.get("/knowledge-base-stats")
+def get_knowledge_base_stats():
+    """
     Get statistics about the current knowledge base.
-    
+    """
     return {
-        total_chunks len(knowledge_chunks),
-        embedding_dimension faiss_index.d if faiss_index else None,
-        total_vectors faiss_index.ntotal if faiss_index else None
+        "total_chunks": len(knowledge_chunks),
+        "embedding_dimension": faiss_index.d if faiss_index else None,
+        "total_vectors": faiss_index.ntotal if faiss_index else None
     }
 
 # ============================================================================
