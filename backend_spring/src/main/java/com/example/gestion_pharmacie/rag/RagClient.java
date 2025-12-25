@@ -41,7 +41,7 @@ public class RagClient {
         body.put("max_new_tokens", maxNewTokens != null ? maxNewTokens : 300);
         body.put("temperature", temperature != null ? temperature : 0.7);
         body.put("top_p", topP != null ? topP : 0.9);
-        body.put("use_rag", safeContext.isEmpty());
+        body.put("use_rag", true);  // Always enable S3 retrieval to combine with external_context
         if (!safeContext.isEmpty()) {
             body.put("external_context", safeContext);
         }

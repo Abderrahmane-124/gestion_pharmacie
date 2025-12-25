@@ -1,44 +1,166 @@
 # Backend RAG Data Flow Architecture
 
-This document outlines the architecture and data flow for the RAG (Retrieval-Augmented Generation) system, specifically focusing on the integration between the Spring Boot Backend and the Python AI Service.
+This document outlines the architecture and data flow for the RAG (Retrieval-Augmented Generation) system.
 
-## Global Architecture Schema
+---
 
-The system uses a **Push-based RAG approach** where the backend pre-fetches relevant context from its own relational database and "pushes" it to the AI service, rather than the AI service retrieving data independently.
 
-![RAG Architecture Diagram](./rag_architecture_diagram.png)
+## 📊 Flux de Données Détaillé
 
-## Detailed Data Flow Explanation
+### Étape 1: Requête Utilisateur
+```
+👤 User → 🖥️ Frontend → ☕ Spring Boot
+```
+| Composant | Action |
+|-----------|--------|
+| **Frontend** | Envoie `POST /api/rag/chat` avec le prompt |
+| **RagController** | Reçoit la requête |
+| **Spring Security** | Authentifie l'utilisateur (Pharmacien/Fournisseur) |
 
-The process follows a strictly orchestrated flow where the Spring Boot application acts as the "Controller" of information.
+---
 
-### 1. Request Handling (Spring Boot)
-*   **EntryPoint**: The user sends a request to the `RagController` (`/api/rag/chat`).
-*   **Authentication**: The controller first verifies the user's identity (Pharmacist, Supplier, or Generic User) via Spring Security.
+### Étape 2: Agrégation du Contexte SQL
+```
+☕ DatabaseQueryService → 📊 PostgreSQL
+```
+| Intent détecté | Données récupérées |
+|----------------|-------------------|
+| `"stock"`, `"médicament"` | `MedicamentRepository.findByUtilisateur()` |
+| `"commande"` | `CommandeRepository.findByPharmacien()` |
+| `"alerte"` | `AlerteRepository.findByUtilisateurId()` |
+| `"vente"`, `"panier"` | `PanierRepository.findByPharmacien()` |
 
-### 2. Context Aggregation (`DatabaseQueryService`)
-Instead of generic retrieval, the system builds a highly specific context based on the user's role and query intent.
-*   **Intent Detection**: The service analyzes the user's prompt using keyword matching (e.g., "stock", "commande", "alerte") to decide what data is relevant.
-*   **Role-Based Data Fetching**:
-    *   **Pharmacist**: Fetches their specific stock, recent orders, and alerts from the `SQL Database` using standard Repositories (`MedicamentRepository`, `CommandeRepository`, etc.).
-    *   **Supplier**: Fetches purely the products they supply and their related order history.
-*   **Formatting**: The raw database entities are converted into human-readable strings (e.g., `"Medicament: Doliprane | Quantite: 50"`).
+---
 
-### 3. AI Interaction (`RagClient`)
-*   The `RagClient` bundles the user's original prompt along with this curated list of strings into a single JSON payload.
-*   It sends this payload to the Python service via HTTP POST.
-*   **Key Field**: `external_context`. This field carries the real-time database data.
+### Étape 3: Appel au Service RAG
+```
+☕ RagClient → 🐍 rag_server.py
+```
+**Payload envoyé:**
+```json
+{
+  "prompt": "Quel médicament pour le diabète ?",
+  "external_context": ["Medicament: Metformine 500mg | Stock: 20", ...],
+  "use_rag": true,
+  "max_new_tokens": 300
+}
+```
 
-### 4. Generation (Python Service)
-*   The `rag_server.py` receives the request.
-*   **Constraint Checking**: It checks for the presence of `external_context`.
-*   **Bypass**: Since `external_context` is provided, the Python server **skips internal retrieval** (like S3/Vector DB). It assumes the backend has provided all necessary information.
-*   **Prompt Engineering**: It constructs a system prompt that includes the injected context and instructs the LLaMA model to answer based *only* on that provided information.
-*   **Inference**: The LLaMA model generates a natural language response.
+---
 
-### 5. Response Delivery
-*   The generated text is returned to the Spring Boot Client.
-*   The Spring Boot Controller relays the final answer to the user.
+### Étape 4: Retrieval (S3/FAISS)
+
+Cette phase extrait les informations pertinentes de la base de médicaments pour enrichir le contexte.
+
+#### 4.1 Sentence Transformer (Embedding)
+
+| Élément | Valeur |
+|---------|--------|
+| **Modèle** | `sentence-transformers/all-MiniLM-L6-v2` |
+| **Entrée** | Prompt texte : `"Quel médicament pour le diabète ?"` |
+| **Sortie** | Vecteur numpy de dimension 384 : `[0.023, -0.451, 0.127, ..., 0.872]` |
+
+**Processus :**
+```python
+query_embedding = embedding_model.encode(["Quel médicament pour le diabète ?"])
+# Résultat: numpy array shape (1, 384)
+```
+
+> [!NOTE]
+> Le Sentence Transformer comprend le **sens sémantique** : "diabète" sera proche de "antidiabétique", "metformine", "glycémie" même si les mots sont différents.
+
+---
+
+#### 4.2 FAISS Index Search (Similarity Search)
+
+| Élément | Valeur |
+|---------|--------|
+| **Type d'index** | `IndexFlatL2` (distance euclidienne exacte) |
+| **Entrée** | Vecteur query (384D) + Index des 5000+ chunks |
+| **Sortie** | Top-K indices + distances (similarité) |
+
+**Processus :**
+```python
+distances, indices = faiss_index.search(query_embedding, k=3)
+# distances: [[0.45, 0.52, 0.61]]  ← Plus petit = plus similaire
+# indices:   [[1234, 892, 3401]]   ← Indices des chunks dans le CSV
+```
+
+**Fonctionnement interne :**
+```
+┌──────────────────────────────────────────────────────────────────┐
+│  FAISS Index (créé au démarrage)                                 │
+│  ┌─────────────────────────────────────────────────────────────┐ │
+│  │ Chunk 0: [0.12, -0.34, ...]  → "Doliprane 500mg, antalgique"│ │
+│  │ Chunk 1: [0.08, -0.22, ...]  → "Amoxicilline, antibiotique" │ │
+│  │ Chunk 2: [0.45, 0.12, ...]   → "Metformine, antidiabétique" │ │
+│  │ ...                                                         │ │
+│  │ Chunk 5052: [...]            → "Insuline Lantus"            │ │
+│  └─────────────────────────────────────────────────────────────┘ │
+│                                                                  │
+│  Query Vector: [0.42, 0.15, ...] ("diabète")                     │
+│         ↓                                                        │
+│  Calcul distance L2 avec TOUS les vecteurs                       │
+│         ↓                                                        │
+│  Top-3 plus proches: Chunk 2, Chunk 4521, Chunk 3892             │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+#### 4.3 Résultat : Top-K Chunks
+
+| Élément | Valeur |
+|---------|--------|
+| **K** | 3 (configurable via `TOP_K_RESULTS`) |
+| **Entrée** | Indices des chunks les plus similaires |
+| **Sortie** | Liste de tuples `(texte, metadata, score)` |
+
+**Exemple de sortie :**
+```python
+retrieved_chunks = [
+    (
+        "Nom: METFORMINE 500MG\nClasse: Antidiabétique\nIndications: Diabète type 2...",
+        {"row_index": 1234, "source": "csv", "columns": ["Nom", "Classe", ...]},
+        0.45  # distance (plus petit = plus pertinent)
+    ),
+    (
+        "Nom: GLUCOPHAGE 850MG\nClasse: Antidiabétique\nIndications: Diabète type 2...",
+        {"row_index": 892, "source": "csv", "columns": [...]},
+        0.52
+    ),
+    (
+        "Nom: JANUVIA 100MG\nClasse: Inhibiteur DPP-4\nIndications: Diabète type 2...",
+        {"row_index": 3401, "source": "csv", "columns": [...]},
+        0.61
+    )
+]
+```
+
+
+---
+
+### Étape 5: Génération (LLaMA)
+```
+🧠 LLaMA 3.2 = Contexte SQL + Contexte S3 → Réponse
+```
+**Contexte combiné:**
+- ✅ **Spring Boot** : Stock actuel, commandes, alertes (temps réel)
+- ✅ **S3** : Indications, posologie, contre-indications (base complète)
+
+---
+
+### Étape 6: Réponse
+```json
+{
+  "response": "Pour le diabète de type 2, je vous recommande METFORMINE 500mg...",
+  "answer_source": "springboot+s3",
+  "sources": [
+    {"source": "springboot", "row_index": null},
+    {"source": "s3", "row_index": 1234, "similarity_score": 0.45}
+  ]
+}
+```
 
 ---
 
