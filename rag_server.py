@@ -1,6 +1,7 @@
 # ============================================================================
 # IMPORTS
 # ============================================================================
+import os
 
 import boto3                                    # AWS SDK for Python - to access S3
 import pandas as pd                             # Data manipulation library for CSV processing
@@ -34,7 +35,7 @@ CHUNK_SIZE = 500                               # Maximum characters per text chu
 
 # LLaMA Model Configuration (from your original code)
 MODEL_NAME = "meta-llama/Llama-3.2-3B-Instruct"
-TOKEN = "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"
+TOKEN = os.environ.get("HF_TOKEN")  # Set via environment variable
 
 # ============================================================================
 # INITIALIZE MODELS AND SERVICES
